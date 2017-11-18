@@ -65,32 +65,32 @@ static NODE_INFO* create_new_node(NODE_VALUE data_value)
     }
     return result;
 }
+
 static void rebalance_if_neccessary(NODE_INFO* node_info)
 {
-    if (node_info->balance_factor >= 2)
+    if (node_info->balance_factor >= 1)
     {
         LogDebug("Rebalancing to the right");
     }
-    else if (node_info->balance_factor <= -2)
+    else if (node_info->balance_factor <= -1)
     {
         LogDebug("Rebalancing to the left");
     }
 }
 
-static int insert_into_tree(NODE_INFO* parent, NODE_INFO* new_node)
+static int insert_into_tree(NODE_INFO** parent, NODE_INFO* new_node)
 {
     int result;
-    if (parent == NULL)
+    if (*parent == NULL)
     {
-        parent = new_node;
+        *parent = new_node;
         result = 0;
     }
-    else if (new_node->data > parent->data)
+    else if (new_node->data > (*parent)->data)
     {
-        if (insert_into_tree(parent->right, new_node) == 0)
+        if (insert_into_tree(&(*parent)->right, new_node) != INSERT_NODE_FAILURE)
         {
             result = 1;
-            parent->balance_factor += result;
         }
         else
         {
@@ -98,9 +98,9 @@ static int insert_into_tree(NODE_INFO* parent, NODE_INFO* new_node)
             result = INSERT_NODE_FAILURE;
         }
     }
-    else if (new_node->data < parent->data)
+    else if (new_node->data < (*parent)->data)
     {
-        if (insert_into_tree(parent->left, new_node) == 0)
+        if (insert_into_tree(&(*parent)->left, new_node) != INSERT_NODE_FAILURE)
         {
             result = -1;
         }
@@ -117,8 +117,8 @@ static int insert_into_tree(NODE_INFO* parent, NODE_INFO* new_node)
 
     if (result != INSERT_NODE_FAILURE)
     {
-        parent->balance_factor += result;
-        rebalance_if_neccessary(parent);
+        (*parent)->balance_factor += result;
+        rebalance_if_neccessary(*parent);
     }
     return result;
 }
@@ -157,6 +157,7 @@ void binary_tree_destroy(BINARY_TREE_HANDLE handle)
 {
     if (handle != NULL)
     {
+        clear_tree(handle->root_node);
         free(handle);
     }
 }
@@ -172,12 +173,12 @@ int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_VALUE value)
     else
     {
         NODE_INFO* new_node = create_new_node(value);
-        if (new_node != NULL)
+        if (new_node == NULL)
         {
             LogError("FAILURE: Creating new node on insert");
             result = __LINE__;
         }
-        else if (insert_into_tree(handle->root_node, new_node) == INSERT_NODE_FAILURE)
+        else if (insert_into_tree(&handle->root_node, new_node) == INSERT_NODE_FAILURE)
         {
             LogError("FAILURE: Creating new node on insert");
             free(new_node);
@@ -185,6 +186,7 @@ int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_VALUE value)
         }
         else
         {
+            handle->items++;
             result = 0;
         }
     }
