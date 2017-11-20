@@ -5,6 +5,9 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(whiskey)
 
+#Use solution folders.
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 IF(WIN32)
     #windows needs this define
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -35,3 +38,10 @@ include_directories(.)
 
 add_executable(binary_tree ${whiskey_c_files} ${whiskey_h_files})
 
+set(CTEST_INCLUDES ${CMAKE_CURRENT_LIST_DIR}/deps/ctest/inc)
+
+add_subdirectory(./deps/testrunnerswitcher)
+
+add_subdirectory(./deps/ctest)
+
+add_subdirectory(tests)

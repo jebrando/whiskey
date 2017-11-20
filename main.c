@@ -8,29 +8,32 @@
 
 #include "binary_tree.h"
 
-static const char* STRING_TO_STORE = "CDAB";
-static const char INVALID_ITEM = '@';
+static const NODE_KEY KEY_VALUES[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
+static const NODE_KEY INVALID_ITEM = 0x01;
 
-int insert_items(BINARY_TREE_HANDLE handle)
+static void* DATA_VALUE = (void*)0x11;
+
+int insert_items(BINARY_TREE_HANDLE handle, const NODE_KEY insert_group[], size_t count)
 {
     int result = 0;
-    size_t count = strlen(STRING_TO_STORE);
     for (size_t index = 0; index < count; index++)
     {
-        if (binary_tree_insert(handle, STRING_TO_STORE[index]) != 0)
+        if (binary_tree_insert(handle, insert_group[index], DATA_VALUE) != 0)
         {
             (void)printf("FAILURE: Inserting item %d\r\n", (int)index);
             result = __LINE__;
             break;
         }
     }
+    (void)printf(" Tree Items %d\r\n", (int)binary_tree_item_count(handle) );
+    (void)printf("Tree Height %d\r\n", (int)binary_tree_height(handle));
     return result;
 }
 
 int find_item(BINARY_TREE_HANDLE handle, char item_to_find)
 {
     int result;
-    if (binary_tree_find(handle, item_to_find) == 0)
+    if (binary_tree_find(handle, item_to_find) == DATA_VALUE)
     {
         (void)printf("The item has been found\r\n");
         result = 0;
@@ -52,10 +55,11 @@ int main(void)
     }
     else
     {
-        if (insert_items(handle) == 0)
+        size_t count = sizeof(KEY_VALUES);
+        if (insert_items(handle, KEY_VALUES, count) == 0)
         {
             // Find a valid item
-            if (find_item(handle, STRING_TO_STORE[1]) != 0)
+            if (find_item(handle, KEY_VALUES[1]) != 0)
             {
                 (void)printf("FAILURE: Looking for a valid item has failed\r\n");
             }
@@ -69,4 +73,6 @@ int main(void)
         }
         binary_tree_destroy(handle);
     }
+    (void)printf("Press any key to exit:");
+    (void)getchar();
 }
