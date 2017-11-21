@@ -58,6 +58,8 @@ int main(void)
         size_t count = sizeof(KEY_VALUES);
         if (insert_items(handle, KEY_VALUES, count) == 0)
         {
+            binary_tree_print_tree(handle);
+
             // Find a valid item
             if (find_item(handle, KEY_VALUES[1]) != 0)
             {
