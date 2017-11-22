@@ -85,28 +85,50 @@ static void print_tree(const NODE_INFO* node_info, size_t indent_level)
 
 static void rotate_right(NODE_INFO* node_info)
 {
-    (void)node_info;
     NODE_INFO* tpm_node = node_info;
 
     node_info->parent->left = node_info->left;
+    node_info->parent->left->balance_factor = 0;
+    node_info->parent->left->parent = node_info->parent;
+    node_info->parent->balance_factor++;
     if (node_info->parent->left->right == NULL)
     {
         node_info->parent->left->right = tpm_node;
+        tpm_node->parent = node_info->parent->left;
+        tpm_node->left = tpm_node->right = NULL;
+        tpm_node->balance_factor = 0;
     }
     else
     {
         tpm_node->left = node_info->parent->left->right;
+        tpm_node->right = NULL;
         node_info->parent->left->right = tpm_node;
+        tpm_node->balance_factor = -1;
     }
-
-
-    /*NODE_INFO* parent_temp = node_info;
-    node_info->left->right = node_info;*/
 }
 
 static void rotate_left(NODE_INFO* node_info)
 {
-    (void)node_info;
+    NODE_INFO* tpm_node = node_info;
+
+    node_info->parent->right = node_info->right;
+    node_info->parent->right->balance_factor = 0;
+    node_info->parent->right->parent = node_info->parent;
+    node_info->parent->balance_factor++;
+    tpm_node->parent = node_info->parent->right;
+    if (node_info->parent->right->left == NULL)
+    {
+        node_info->parent->right->left = tpm_node;
+        tpm_node->right = tpm_node->left = NULL;
+        tpm_node->balance_factor = 0;
+    }
+    else
+    {
+        tpm_node->right = node_info->parent->left->right;
+        tpm_node->left = NULL;
+        node_info->parent->right->left = tpm_node;
+        tpm_node->balance_factor = 1;
+    }
 }
 
 static int rebalance_if_neccessary(NODE_INFO* node_info)
@@ -115,20 +137,30 @@ static int rebalance_if_neccessary(NODE_INFO* node_info)
     if (node_info->balance_factor < -1 && node_info->left->balance_factor == -1)
     {
         rotate_right(node_info);
+        result = 1;
         LogDebug("rotate right");
     }
     else if (node_info->balance_factor > 1 && node_info->right->balance_factor == 1)
     {
         rotate_left(node_info);
+        result = -1;
         LogDebug("rotate left");
     }
     else if (node_info->balance_factor < -1 && node_info->left->balance_factor == 1)
     {
+        // for now
+        result = 0;
         LogDebug("rotate left right");
     }
     else if (node_info->balance_factor > 1 && node_info->right->balance_factor == -1)
     {
+        // for now
+        result = 0;
         LogDebug("rotate right left");
+    }
+    else
+    {
+        result = 0;
     }
     return result;
 }
@@ -205,6 +237,10 @@ static int insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t
             if ((*target_node)->right->parent == NULL)
             {
                 (*target_node)->right->parent = *target_node;
+                if ((*target_node)->right->parent->left == NULL)
+                {
+                    (*height)++;
+                }
             }
             result = 1;
         }
@@ -221,6 +257,10 @@ static int insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t
             if ((*target_node)->left->parent == NULL)
             {
                 (*target_node)->left->parent = *target_node;
+                if ((*target_node)->left->parent->right == NULL)
+                {
+                    (*height)++;
+                }
             }
             result = -1;
         }
@@ -233,9 +273,12 @@ static int insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t
 
     if (result != INSERT_NODE_FAILURE)
     {
-        (*height)++;
         (*target_node)->balance_factor += result;
-        result += rebalance_if_neccessary(*target_node);
+        if (rebalance_if_neccessary(*target_node) != 0)
+        {
+            // A rebalance will always subtract the height
+            (*height)--;
+        }
     }
     return result;
 }
@@ -318,7 +361,15 @@ int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_KEY value, void* data)
         }
         else
         {
-            handle->height = current_height;
+            if (handle->items == 0)
+            {
+                // The initial item should increase the height
+                handle->height++;
+            }
+            else
+            {
+                handle->height += current_height;
+            }
             handle->items++;
             result = 0;
         }
