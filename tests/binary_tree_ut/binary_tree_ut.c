@@ -28,16 +28,6 @@ static void* my_gballoc_realloc(void* ptr, size_t size)
     return realloc(ptr, size);
 }
 
-/*#include "umock_c.h"
-#include "umocktypes_charptr.h"
-#include "umocktypes_stdint.h"
-#include "umock_c_negative_tests.h"
-#include "azure_c_shared_utility/macro_utils.h"*/
-
-/*#define ENABLE_MOCKS
-#include "azure_c_shared_utility/gballoc.h"
-#undef ENABLE_MOCKS*/
-
 #include "binary_tree.h"
 
 #ifdef __cplusplus
@@ -50,7 +40,9 @@ extern "C"
 
 static const NODE_KEY INSERT_FOR_NO_ROTATION[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
 static const NODE_KEY INSERT_FOR_RIGHT_ROTATION[] = { 0xa, 0xb, 0x7, 0x5, 0x3 };
-static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0xa, 0xb, 0x7, 0x5, 0x3 };
+static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xb, 0xd };
+static const NODE_KEY INSERT_FOR_RIGHT_LEFT_ROTATION[] = { 0x10, 0x14, 0xe, 0xa, 0xc };
+static const NODE_KEY INSERT_FOR_LEFT_RIGHT_ROTATION[] = { 0xa, 0x6, 0xd, 0x12, 0xe };
 static const NODE_KEY INVALID_ITEM = 0x01;
 
 static void* DATA_VALUE = (void*)0x11;
@@ -198,5 +190,130 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
-    
+
+    TEST_FUNCTION(binary_tree_insert_right_left_rotate_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(INSERT_FOR_RIGHT_LEFT_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, INSERT_FOR_RIGHT_LEFT_ROTATION[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_insert_left_right_rotate_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(INSERT_FOR_LEFT_RIGHT_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, INSERT_FOR_LEFT_RIGHT_ROTATION[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+
+    TEST_FUNCTION(binary_tree_insert_left_rotate_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, INSERT_FOR_LEFT_ROTATION[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_find_handle_NULL_fail)
+    {
+        //arrange
+
+        //act
+        void* found_item = binary_tree_find(NULL, INSERT_FOR_NO_ROTATION[0]);
+
+        ASSERT_IS_NULL(found_item);
+
+        //cleanup
+    }
+
+    TEST_FUNCTION(binary_tree_find_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        void* found_item = binary_tree_find(handle, INSERT_FOR_NO_ROTATION[count-1]);
+
+        //assert
+        ASSERT_IS_NOT_NULL(found_item);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_find_no_items_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        void* found_item = binary_tree_find(handle, INSERT_FOR_NO_ROTATION[0]);
+
+        //assert
+        ASSERT_IS_NULL(found_item);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_find_invalid_item_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        void* found_item = binary_tree_find(handle, INVALID_ITEM);
+
+        //assert
+        ASSERT_IS_NULL(found_item);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
     END_TEST_SUITE(binary_tree_ut)
