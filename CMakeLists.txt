@@ -25,11 +25,13 @@ endif(WIN32)
 
 set(whiskey_c_files
     binary_tree.c
+    stopwatch.c
     main.c
 )
 
 set(whiskey_h_files
     binary_tree.h
+    stopwatch.h
 )
 
 #Conditionally use the SDK trusted certs in the samples

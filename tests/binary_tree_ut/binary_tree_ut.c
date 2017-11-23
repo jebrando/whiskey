@@ -39,6 +39,7 @@ extern "C"
 #endif
 
 static const NODE_KEY INSERT_FOR_NO_ROTATION[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
+static const size_t INSERT_NO_ROTATION_HEIGHT = 3;
 static const NODE_KEY INSERT_FOR_RIGHT_ROTATION[] = { 0xa, 0xb, 0x7, 0x5, 0x3 };
 static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xb, 0xd };
 static const NODE_KEY INSERT_FOR_RIGHT_LEFT_ROTATION[] = { 0x10, 0x14, 0xe, 0xa, 0xc };
@@ -315,5 +316,92 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
+
+    TEST_FUNCTION(binary_tree_find_invalid_item_2_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        void* found_item = binary_tree_find(handle, 0x20);
+
+        //assert
+        ASSERT_IS_NULL(found_item);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_item_count_handle_NULL_fail)
+    {
+        //arrange
+
+        //act
+        size_t item_count = binary_tree_item_count(NULL);
+
+        //assert
+        ASSERT_ARE_NOT_EQUAL(size_t, 0, item_count);
+
+        //cleanup
+    }
+
+    TEST_FUNCTION(binary_tree_item_count_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        size_t item_count = binary_tree_item_count(handle);
+
+        //assert
+        ASSERT_ARE_EQUAL(size_t, count, item_count);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_height_handle_NULL_fail)
+    {
+        //arrange
+
+        //act
+        size_t item_count = binary_tree_height(NULL);
+
+        //assert
+        ASSERT_ARE_NOT_EQUAL(size_t, 0, item_count);
+
+        //cleanup
+    }
+
+    TEST_FUNCTION(binary_tree_height_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        size_t item_count = binary_tree_height(handle);
+
+        //assert
+        ASSERT_ARE_EQUAL(size_t, INSERT_NO_ROTATION_HEIGHT, item_count);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
 
     END_TEST_SUITE(binary_tree_ut)

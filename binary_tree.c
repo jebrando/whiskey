@@ -6,34 +6,9 @@
 #include <string.h>
 
 #include "binary_tree.h"
+#include "logging.h"
 
 #define USE_RECURSION
-
-typedef enum LOG_CATEGORY_TAG
-{
-    AZ_LOG_ERROR,
-    AZ_LOG_INFO,
-    AZ_LOG_TRACE
-} LOG_CATEGORY;
-
-#if defined _MSC_VER
-#define FUNC_NAME __FUNCDNAME__
-#else
-#define FUNC_NAME __func__
-#endif
-#define LOG_NONE 0x00
-#define LOG_LINE 0x01
-
-#define LOG(log_category, log_options, format, ...) {(void)log_category;(void)log_options; (void)printf(format, __VA_ARGS__);(void)printf("\r\n"); }
-
-#ifdef DEBUG_LOG
-#define LogDebug(FORMAT, ...) do { LOG(AZ_LOG_TRACE, LOG_LINE, FORMAT, __VA_ARGS__); } while((void)0,0)
-#else
-#define LogDebug(FORMAT, ...) do {} while((void)0,0)
-#endif // DEBUG_LOG
-#define LogError(FORMAT, ...) do { LOG(AZ_LOG_ERROR, LOG_LINE, FORMAT, __VA_ARGS__); } while((void)0,0)
-
-#define INSERT_NODE_FAILURE     11
 
 typedef struct NODE_INFO_TAG
 {
@@ -153,8 +128,8 @@ static int rebalance_if_neccessary(NODE_INFO* node_info)
         node_info->left->right->left = node_info->left;
         node_info->left->parent = node_info->left->right;
         node_info->left->right->parent = node_info;
-        node_info->left->right = NULL;
         node_info->left = node_info->left->right;
+        node_info->left->left->right = NULL;
         // Now do a right rotation
         rotate_right(node_info);
         result = -1;
@@ -165,8 +140,8 @@ static int rebalance_if_neccessary(NODE_INFO* node_info)
         node_info->right->left->right = node_info->right;
         node_info->right->parent = node_info->right->left;
         node_info->right->left->parent = node_info;
-        node_info->right->left = NULL;
         node_info->right = node_info->right->left;
+        node_info->right->right->left = NULL;
         // Do the left rotation
         rotate_left(node_info);
         result = 1;
@@ -211,7 +186,7 @@ static NODE_INFO* find_node(NODE_INFO* node_info, const NODE_KEY* value)
         }
 #else
         int compare_value;
-        const NODE_INFO* compare_node = node_info;
+        NODE_INFO* compare_node = node_info;
 
         result = NULL;
         while (compare_node != NULL)
@@ -279,34 +254,48 @@ static int insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t
     }
 #else
     int continue_run = 1;
-    NODE_INFO* current_node = *target_node;
     NODE_INFO* prev_node = NULL;
-    do
+    if (*target_node == NULL)
     {
+        *target_node = new_node;
+        result = 0;
         (*height)++;
-        if (current_node == NULL)
+    }
+    else
+    {
+        NODE_INFO* current_node = *target_node;
+        do
         {
-            current_node = new_node;
-            current_node->parent = prev_node;
-            result = continue_run = 0;
-        }
-        else if (new_node->key > current_node->key)
-        {
-            prev_node = current_node;
-            current_node = current_node->right;
-        }
-        else if (new_node->key < current_node->key)
-        {
-            prev_node = current_node;
-            current_node = current_node->left;
-        }
-        else
-        {
-            // Failure 
-            continue_run = 0;
-            result = INSERT_NODE_FAILURE;
-        }
-    } while (continue_run != 0);
+            (*height)++;
+            if (new_node->key > current_node->key)
+            {
+                if (current_node->right == NULL)
+                {
+                    current_node->right = new_node;
+                    current_node->right->parent = prev_node;
+                    current_node->right->
+                    continue_run = 0;
+                }
+                else
+                {
+                    prev_node = current_node;
+                    current_node = current_node->right;
+                }
+            }
+            else if (new_node->key < current_node->key)
+            {
+                prev_node = current_node;
+                current_node = current_node->left;
+            }
+            else
+            {
+                // Failure 
+                continue_run = 0;
+                result = INSERT_NODE_FAILURE;
+            }
+        } while (continue_run != 0);
+    }
+
 #endif
     if (result != INSERT_NODE_FAILURE)
     {
@@ -583,18 +572,6 @@ void* binary_tree_find(BINARY_TREE_HANDLE handle, NODE_KEY find_value)
     return result;
 }
 
-void binary_tree_print_tree(BINARY_TREE_HANDLE handle)
-{
-    if (handle == NULL)
-    {
-        LogError("FAILURE: Invalid handle specified on print");
-    }
-    else
-    {
-        print_tree(handle->root_node, 0);
-    }
-}
-
 size_t binary_tree_item_count(BINARY_TREE_HANDLE handle)
 {
     size_t result;
@@ -623,4 +600,16 @@ size_t binary_tree_height(BINARY_TREE_HANDLE handle)
         result = handle->height;
     }
     return result;
+}
+
+void binary_tree_print(BINARY_TREE_HANDLE handle)
+{
+    if (handle == NULL)
+    {
+        LogError("FAILURE: Invalid handle specified on print");
+    }
+    else
+    {
+        print_tree(handle->root_node, 0);
+    }
 }
