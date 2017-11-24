@@ -48,15 +48,6 @@ static const NODE_KEY INVALID_ITEM = 0x01;
 
 static void* DATA_VALUE = (void*)0x11;
 
-//DEFINE_ENUM_STRINGS(UMOCK_C_ERROR_CODE, UMOCK_C_ERROR_CODE_VALUES)
-
-/*static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
-{
-    char temp_str[256];
-    (void)snprintf(temp_str, sizeof(temp_str), "umock_c reported error :%s", ENUM_TO_STRING(UMOCK_C_ERROR_CODE, error_code));
-    ASSERT_FAIL(temp_str);
-}*/
-
 static TEST_MUTEX_HANDLE g_testByTest;
 static TEST_MUTEX_HANDLE g_dllByDll;
 
@@ -431,6 +422,75 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
+
+        // Use as verification since it touches every node
+        binary_tree_print(handle);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_remove_2_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[count/2]);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+
+        // Use as verification since it touches every node
+        binary_tree_print(handle);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_remove_3_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[0]);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+
+        // Use as verification since it touches every node
+        binary_tree_print(handle);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_remove_item_not_found_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INVALID_ITEM);
+
+        //assert
+        ASSERT_ARE_NOT_EQUAL(int, 0, result);
 
         //cleanup
         binary_tree_destroy(handle);
