@@ -403,5 +403,37 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         binary_tree_destroy(handle);
     }
 
+    TEST_FUNCTION(binary_tree_remove_handle_NULL_fail)
+    {
+        //arrange
+
+        //act
+        int result = binary_tree_remove(NULL, INSERT_FOR_NO_ROTATION[0]);
+
+        //assert
+        ASSERT_ARE_NOT_EQUAL(int, 0, result);
+
+        //cleanup
+    }
+
+    TEST_FUNCTION(binary_tree_remove_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[count - 1]);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
 
     END_TEST_SUITE(binary_tree_ut)

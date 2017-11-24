@@ -544,6 +544,10 @@ int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value)
     else
     {
         result = remove_node(handle->root_node, &value);
+        if (result == 0)
+        {
+            handle->items-- ;
+        }
     }
     return result;
 }

@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "binary_tree.h"
+#include "stopwatch.h"
 
 //static const NODE_KEY KEY_VALUES[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
 // Right Rotation
@@ -15,6 +16,8 @@ static const NODE_KEY KEY_VALUES[] = { 0xa, 0xb, 0x7, 0x5, 0x3, 0xc };
 static const NODE_KEY INVALID_ITEM = 0x01;
 
 static void* DATA_VALUE = (void*)0x11;
+
+STOPWATCH_HANDLE g_timer_handle;
 
 int insert_items(BINARY_TREE_HANDLE handle, const NODE_KEY insert_group[], size_t count)
 {
@@ -56,6 +59,11 @@ int main(void)
     {
         (void)printf("FAILURE: creating binary tree\r\n");
     }
+    else if ((g_timer_handle = stopwatch_create()) == NULL)
+    {
+        binary_tree_destroy(handle);
+        (void)printf("FAILURE: creating stopwatch\r\n");
+    }
     else
     {
         size_t count = sizeof(KEY_VALUES);
@@ -77,6 +85,7 @@ int main(void)
 
         }
         binary_tree_destroy(handle);
+        stopwatch_destroy(g_timer_handle);
     }
     (void)printf("Press any key to exit:");
     (void)getchar();
