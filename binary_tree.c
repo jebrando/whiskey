@@ -335,6 +335,7 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
                     // then predecessor's left tree becomes n's right tree
                     // and delete n
                     previous_node->left = current_node->right;
+                    current_node->right->parent = previous_node;
                     free(current_node);
                     current_node = NULL;
                 }
@@ -344,6 +345,7 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
                     // then predecessor's right tree becomes n's right tree
                     // and delete n
                     previous_node->right = current_node->right;
+                    current_node->right->parent = previous_node;
                     free(current_node);
                     current_node = NULL;
                 }
@@ -380,39 +382,45 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
         // Replace Node with smallest value in right subtree
         else if (current_node->left != NULL && current_node->right != NULL)
         {
-            NODE_INFO* check_node = current_node->right;
-            if ( (current_node->left == NULL) && (current_node->right == NULL))
+            //NODE_INFO* check_node = current_node->right;
+            // If the node's right child has a left child
+            // Move all the way down left to locate smallest element
+            if ((current_node->right)->left != NULL)
             {
-                current_node = check_node;
-                free(check_node);
-                current_node->right = NULL;
-            }
-            else // Right child has children
-            {
-                // If the node's right child has a left child
-                // Move all the way down left to locate smallest element
-                if ((current_node->right)->left != NULL)
+                NODE_INFO* left_current;
+                NODE_INFO* left_current_prev;
+                left_current_prev = current_node->right;
+                left_current = (current_node->right)->left;
+                while (left_current->left != NULL)
                 {
-                    NODE_INFO* left_current;
-                    NODE_INFO* left_current_prev;
-                    left_current_prev = current_node->right;
-                    left_current = (current_node->right)->left;
-                    while (left_current->left != NULL)
-                    {
-                        left_current_prev = left_current;
-                        left_current = left_current->left;
-                    }
-                    current_node->data = left_current->data;
-                    free(left_current);
-                    left_current_prev->left = NULL;
+                    left_current_prev = left_current;
+                    left_current = left_current->left;
+                }
+                current_node->data = left_current->data;
+                free(left_current);
+                left_current_prev->left = NULL;
+            }
+            else
+            {
+                NODE_INFO* temp = current_node;
+                // Find the parent node that points to this
+                // and change it
+                if (temp->parent->right == temp)
+                {
+                    temp->parent->right = temp->right;
+                    temp->parent->balance_factor--;
                 }
                 else
                 {
-                    NODE_INFO* temp = current_node->right;
-                    current_node->data = temp->data;
-                    current_node->right = temp->right;
-                    free(temp);
+                    temp->parent->left = temp->right;
+                    temp->parent->balance_factor++;
                 }
+                current_node->right->parent = temp->parent;
+                current_node->right->left = temp->left;
+                current_node = temp->right;
+                current_node->balance_factor--;
+                //current_node->parent = current_node->parent;
+                free(temp);
             }
         }
     }
