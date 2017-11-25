@@ -431,6 +431,31 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         binary_tree_destroy(handle);
     }
 
+    TEST_FUNCTION(binary_tree_remove_two_children_2_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        const NODE_KEY REMOVE_TWO_CHILDREN_2[] = { 0xa, 0xf, 0x6, 0x3, 0xc, 0x12, 0x10 };
+
+        size_t count = sizeof(REMOVE_TWO_CHILDREN_2);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, REMOVE_TWO_CHILDREN_2[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, REMOVE_TWO_CHILDREN_2[1]);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+
+        // Use as verification since it touches every node
+        binary_tree_print(handle);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
     TEST_FUNCTION(binary_tree_remove_one_child_succeed)
     {
         //arrange
@@ -465,7 +490,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[1]);
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION_2[1]);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
@@ -475,6 +500,29 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //cleanup
         binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_remove_node_no_children_2_succeed)
+    {
+        //arrange
+        /*BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+        (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[count-1]);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+
+        // Use as verification since it touches every node
+        binary_tree_print(handle);
+
+        //cleanup
+        binary_tree_destroy(handle);*/
     }
 
     TEST_FUNCTION(binary_tree_remove_node_no_children_succeed)

@@ -30,6 +30,14 @@ typedef struct BINARY_TREE_INFO_TAG
     NODE_INFO* root_node;
 } BINARY_TREE_INFO;
 
+static int calculate_balance_factor(const NODE_INFO* node_info)
+{
+    int result;
+    result = node_info->left == NULL ? 0 : node_info->left->balance_factor;
+    result += node_info->right == NULL ? 0 : node_info->right->balance_factor;
+    return result;
+}
+
 static NODE_INFO* create_new_node(NODE_KEY key_value, void* data)
 {
     NODE_INFO* result;
@@ -210,46 +218,72 @@ static NODE_INFO* find_node(NODE_INFO* node_info, const NODE_KEY* value)
     return result;
 }
 
-static int insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t* height)
+typedef enum INSERT_NODE_TYPE_TAG
 {
-    int result = INSERT_NODE_FAILURE;
+    INSERT_NODE_INSERTED,
+    INSERT_NODE_NO_OP,
+    INSERT_NODE_FAILED
+} INSERT_NODE_TYPE;
+
+static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t* height)
+{
+    INSERT_NODE_TYPE result = INSERT_NODE_FAILED;
 #ifdef USE_RECURSION
     (*height)++;
     if (*target_node == NULL)
     {
         *target_node = new_node;
-        result = 0;
+        result = INSERT_NODE_INSERTED;
     }
     else if (new_node->key > (*target_node)->key)
     {
-        if (insert_into_tree(&(*target_node)->right, new_node, height) != INSERT_NODE_FAILURE)
+        result = insert_into_tree(&(*target_node)->right, new_node, height);
+        if (result != INSERT_NODE_FAILED)
         {
+            // Set parent if not already set
             if ((*target_node)->right->parent == NULL)
             {
                 (*target_node)->right->parent = *target_node;
             }
-            result = 1;
+        }
+        // If you inserted a direct child increment
+        // the balance factor
+        if (result == INSERT_NODE_INSERTED)
+        {
+            (*target_node)->balance_factor += -1;
+            // Only return inserted for 
+            result = INSERT_NODE_NO_OP;
         }
         else
         {
-            // Failure
-            result = INSERT_NODE_FAILURE;
+            // If a decendant has been added then calculate 
+            // the balance factor by addition
+            (*target_node)->balance_factor = calculate_balance_factor(*target_node);
         }
     }
     else if (new_node->key < (*target_node)->key)
     {
-        if (insert_into_tree(&(*target_node)->left, new_node, height) != INSERT_NODE_FAILURE)
+        result = insert_into_tree(&(*target_node)->left, new_node, height);
+        if (result != INSERT_NODE_FAILED)
         {
             if ((*target_node)->left->parent == NULL)
             {
                 (*target_node)->left->parent = *target_node;
             }
-            result = -1;
+        }
+        // If you inserted a direct child increment
+        // the balance factor
+        if (result == INSERT_NODE_INSERTED)
+        {
+            (*target_node)->balance_factor += -1;
+            // Only return inserted for 
+            result = INSERT_NODE_NO_OP;
         }
         else
         {
-            // Failure 
-            result = INSERT_NODE_FAILURE;
+            // If a decendant has been added then calculate 
+            // the balance factor by addition
+            (*target_node)->balance_factor = calculate_balance_factor(*target_node);
         }
     }
 #else
@@ -297,9 +331,8 @@ static int insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t
     }
 
 #endif
-    if (result != INSERT_NODE_FAILURE)
+    if (result != INSERT_NODE_FAILED)
     {
-        (*target_node)->balance_factor += result;
         if (rebalance_if_neccessary(*target_node) != 0)
         {
             // A rebalance will always subtract the height
@@ -338,6 +371,7 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
                     current_node->right->parent = previous_node;
                     free(current_node);
                     current_node = NULL;
+                    previous_node->balance_factor--;
                 }
                 // If predecessor's right tree equals Node n
                 else
@@ -348,6 +382,7 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
                     current_node->right->parent = previous_node;
                     free(current_node);
                     current_node = NULL;
+                    previous_node->balance_factor++;
                 }
             }
             else // Left node Present, No Right node Present
@@ -357,12 +392,15 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
                     previous_node->left = current_node->left;
                     free(current_node);
                     current_node = NULL;
+                    previous_node->balance_factor--;
                 }
                 else
                 {
                     previous_node->right = current_node->left;
+                    current_node->left->parent = previous_node;
                     free(current_node);
                     current_node = NULL;
+                    previous_node->balance_factor++;
                 }
             }
         }
@@ -371,10 +409,12 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
             if (previous_node->left == current_node)
             {
                 previous_node->left = NULL;
+                previous_node->balance_factor--;
             }
             else
             {
                 previous_node->right = NULL;
+                previous_node->balance_factor++;
             }
             free(current_node);
         }
