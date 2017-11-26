@@ -29,6 +29,7 @@ extern void* binary_tree_find(BINARY_TREE_HANDLE handle, NODE_KEY find_value);
 extern size_t binary_tree_item_count(BINARY_TREE_HANDLE handle);
 extern size_t binary_tree_height(BINARY_TREE_HANDLE handle);
 extern void binary_tree_print(BINARY_TREE_HANDLE handle);
+extern char* binary_tree_get_order(BINARY_TREE_HANDLE handle);
 
 #ifdef __cplusplus
 }

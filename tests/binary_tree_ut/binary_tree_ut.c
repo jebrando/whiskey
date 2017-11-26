@@ -42,7 +42,7 @@ static const NODE_KEY INSERT_FOR_NO_ROTATION[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 
 static const NODE_KEY INSERT_FOR_NO_ROTATION_2[] = { 0xa, 0xc, 0x5, 0x7, 0xb, 0x3 };
 static const size_t INSERT_NO_ROTATION_HEIGHT = 3;
 static const NODE_KEY INSERT_FOR_RIGHT_ROTATION[] = { 0xa, 0xb, 0x7, 0x5, 0x3 };
-static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xb, 0xd };
+
 static const NODE_KEY INSERT_FOR_RIGHT_LEFT_ROTATION[] = { 0x10, 0x14, 0xe, 0xa, 0xc };
 static const NODE_KEY INSERT_FOR_LEFT_RIGHT_ROTATION[] = { 0xa, 0x6, 0xd, 0x12, 0xe };
 static const NODE_KEY INVALID_ITEM = 0x01;
@@ -222,13 +222,14 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         binary_tree_destroy(handle);
     }
 
-
     TEST_FUNCTION(binary_tree_insert_left_rotate_succeed)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
+        const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xb, 0xd };
+
         size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
         for (size_t index = 0; index < count; index++)
         {
@@ -241,6 +242,27 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
+
+    TEST_FUNCTION(binary_tree_insert_left_rotate_2_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xd, 0xb };
+        size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, INSERT_FOR_LEFT_ROTATION[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
 
     TEST_FUNCTION(binary_tree_find_handle_NULL_fail)
     {

@@ -96,7 +96,8 @@ static void rotate_left(NODE_INFO* node_info)
     NODE_INFO* tpm_node = node_info;
 
     node_info->parent->right = node_info->right;
-    node_info->right->height = node_info->height;
+    // The current node gets moved down
+    node_info->height--;
 
     node_info->parent->right->balance_factor = 0;
     node_info->parent->right->parent = node_info->parent;
@@ -226,14 +227,14 @@ typedef enum INSERT_NODE_TYPE_TAG
 {
     INSERT_NODE_INSERTED,
     INSERT_NODE_NO_OP,
+    INSERT_NODE_REBALANCE,
     INSERT_NODE_FAILED
 } INSERT_NODE_TYPE;
 
-static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node, size_t* height)
+static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node)
 {
     INSERT_NODE_TYPE result = INSERT_NODE_FAILED;
 #ifdef USE_RECURSION
-    (*height)++;
     if (*target_node == NULL)
     {
         *target_node = new_node;
@@ -242,11 +243,12 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
     }
     else if (new_node->key > (*target_node)->key)
     {
-        if ((result = insert_into_tree(&(*target_node)->right, new_node, height)) != INSERT_NODE_FAILED)
+        if ((result = insert_into_tree(&(*target_node)->right, new_node)) != INSERT_NODE_FAILED)
         {
             // Increment the height
-            if ((*target_node)->height <= (*target_node)->right->height)
+            if ((*target_node)->height <= (*target_node)->right->height || result == INSERT_NODE_REBALANCE)
             {
+                // Or rebalance the height changes should reverberate up the tree
                 (*target_node)->height = (*target_node)->right->height + 1;
             }
             // If you inserted a direct child increment
@@ -263,7 +265,7 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
     }
     else if (new_node->key < (*target_node)->key)
     {
-        if ((result = insert_into_tree(&(*target_node)->left, new_node, height)) != INSERT_NODE_FAILED)
+        if ((result = insert_into_tree(&(*target_node)->left, new_node)) != INSERT_NODE_FAILED)
         {
             // Increment the height
             if ((*target_node)->height <= (*target_node)->left->height)
@@ -336,8 +338,7 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
 
         if (rebalance_if_neccessary(*target_node) != 0)
         {
-            // A rebalance will always subtract the height
-            //(*height)--;
+            result = INSERT_NODE_REBALANCE;
         }
     }
     return result;
@@ -565,7 +566,7 @@ int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_KEY value, void* data)
             LogError("FAILURE: Creating new node on insert");
             result = __LINE__;
         }
-        else if (insert_into_tree(&handle->root_node, new_node, &current_height) == INSERT_NODE_FAILURE)
+        else if (insert_into_tree(&handle->root_node, new_node) == INSERT_NODE_FAILURE)
         {
             LogError("FAILURE: Inserting new node");
             free(new_node);
@@ -650,7 +651,7 @@ size_t binary_tree_height(BINARY_TREE_HANDLE handle)
     }
     else
     {
-        result = handle->height;
+        result = handle->root_node->height;
     }
     return result;
 }
