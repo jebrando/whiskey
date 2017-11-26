@@ -21,6 +21,7 @@ typedef struct NODE_INFO_TAG
     // child on right = -1
     // child on left = +1
     int balance_factor;
+    size_t height;
 } NODE_INFO;
 
 typedef struct BINARY_TREE_INFO_TAG
@@ -33,8 +34,8 @@ typedef struct BINARY_TREE_INFO_TAG
 static int calculate_balance_factor(const NODE_INFO* node_info)
 {
     int result;
-    result = node_info->left == NULL ? 0 : node_info->left->balance_factor;
-    result += node_info->right == NULL ? 0 : node_info->right->balance_factor;
+    result = node_info->left == NULL ? 0 : node_info->left->height;
+    result -= node_info->right == NULL ? 0 : node_info->right->height;
     return result;
 }
 
@@ -95,20 +96,24 @@ static void rotate_left(NODE_INFO* node_info)
     NODE_INFO* tpm_node = node_info;
 
     node_info->parent->right = node_info->right;
+    node_info->right->height = node_info->height;
+
     node_info->parent->right->balance_factor = 0;
     node_info->parent->right->parent = node_info->parent;
     node_info->parent->balance_factor++;
     tpm_node->parent = node_info->parent->right;
     if (node_info->parent->right->left == NULL)
     {
-        node_info->parent->right->left = tpm_node;
+        node_info->parent->left = tpm_node;
         tpm_node->right = tpm_node->left = NULL;
         tpm_node->balance_factor = 0;
+        tpm_node->height = tpm_node->parent->height-1;
     }
     else
     {
         tpm_node->right = node_info->parent->left->right;
         tpm_node->left = NULL;
+        tpm_node->height = tpm_node->parent->height - 1;
         node_info->parent->right->left = tpm_node;
         tpm_node->balance_factor = 1;
     }
@@ -117,34 +122,22 @@ static void rotate_left(NODE_INFO* node_info)
 static int rebalance_if_neccessary(NODE_INFO* node_info)
 {
     int result;
-    if (node_info->balance_factor < -1 && node_info->left->balance_factor == -1)
+    if (node_info->balance_factor < -1 && node_info->right->balance_factor == -1)
     {
-        rotate_right(node_info);
+        rotate_left(node_info);
         result = 1;
         LogDebug("rotate right");
     }
-    else if (node_info->balance_factor > 1 && node_info->right->balance_factor == 1)
+    else if (node_info->balance_factor > 1 && node_info->left->balance_factor == 1)
     {
-        rotate_left(node_info);
+        rotate_right(node_info);
         result = -1;
         LogDebug("rotate left");
     }
-    else if (node_info->balance_factor < -1 && node_info->left->balance_factor == 1)
+    else if (node_info->balance_factor < -1 && node_info->right->balance_factor == 1)
     {
         // Do Left right rotation
         // Make the left child, a child of the left's right node
-        node_info->left->right->left = node_info->left;
-        node_info->left->parent = node_info->left->right;
-        node_info->left->right->parent = node_info;
-        node_info->left = node_info->left->right;
-        node_info->left->left->right = NULL;
-        // Now do a right rotation
-        rotate_right(node_info);
-        result = -1;
-    }
-    else if (node_info->balance_factor > 1 && node_info->right->balance_factor == -1)
-    {
-        // Do right left rotation
         node_info->right->left->right = node_info->right;
         node_info->right->parent = node_info->right->left;
         node_info->right->left->parent = node_info;
@@ -153,6 +146,18 @@ static int rebalance_if_neccessary(NODE_INFO* node_info)
         // Do the left rotation
         rotate_left(node_info);
         result = 1;
+    }
+    else if (node_info->balance_factor > 1 && node_info->left->balance_factor == -1)
+    {
+        // Do right left rotation
+        node_info->left->right->left = node_info->left;
+        node_info->left->parent = node_info->left->right;
+        node_info->left->right->parent = node_info;
+        node_info->left = node_info->left->right;
+        node_info->left->left->right = NULL;
+        // Now do a right rotation
+        rotate_right(node_info);
+        result = -1;
     }
     else
     {
@@ -182,7 +187,6 @@ static NODE_INFO* find_node(NODE_INFO* node_info, const NODE_KEY* value)
         if (compare_value > 0)
         {
             result = find_node(node_info->left, value);
-
         }
         else if (compare_value < 0)
         {
@@ -233,57 +237,50 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
     if (*target_node == NULL)
     {
         *target_node = new_node;
+        (*target_node)->height = 1;
         result = INSERT_NODE_INSERTED;
     }
     else if (new_node->key > (*target_node)->key)
     {
-        result = insert_into_tree(&(*target_node)->right, new_node, height);
-        if (result != INSERT_NODE_FAILED)
+        if ((result = insert_into_tree(&(*target_node)->right, new_node, height)) != INSERT_NODE_FAILED)
         {
-            // Set parent if not already set
-            if ((*target_node)->right->parent == NULL)
+            // Increment the height
+            if ((*target_node)->height <= (*target_node)->right->height)
             {
-                (*target_node)->right->parent = *target_node;
+                (*target_node)->height = (*target_node)->right->height + 1;
             }
-        }
-        // If you inserted a direct child increment
-        // the balance factor
-        if (result == INSERT_NODE_INSERTED)
-        {
-            (*target_node)->balance_factor += -1;
-            // Only return inserted for 
-            result = INSERT_NODE_NO_OP;
-        }
-        else
-        {
-            // If a decendant has been added then calculate 
-            // the balance factor by addition
-            (*target_node)->balance_factor = calculate_balance_factor(*target_node);
+            // If you inserted a direct child increment
+            // the balance factor
+            if (result == INSERT_NODE_INSERTED)
+            {
+                // Set parent node
+                (*target_node)->right->parent = *target_node;
+
+                // Only return inserted for 
+                result = INSERT_NODE_NO_OP;
+            }
         }
     }
     else if (new_node->key < (*target_node)->key)
     {
-        result = insert_into_tree(&(*target_node)->left, new_node, height);
-        if (result != INSERT_NODE_FAILED)
+        if ((result = insert_into_tree(&(*target_node)->left, new_node, height)) != INSERT_NODE_FAILED)
         {
-            if ((*target_node)->left->parent == NULL)
+            // Increment the height
+            if ((*target_node)->height <= (*target_node)->left->height)
             {
-                (*target_node)->left->parent = *target_node;
+                (*target_node)->height = (*target_node)->left->height + 1;
             }
-        }
-        // If you inserted a direct child increment
-        // the balance factor
-        if (result == INSERT_NODE_INSERTED)
-        {
-            (*target_node)->balance_factor += -1;
-            // Only return inserted for 
-            result = INSERT_NODE_NO_OP;
-        }
-        else
-        {
-            // If a decendant has been added then calculate 
-            // the balance factor by addition
-            (*target_node)->balance_factor = calculate_balance_factor(*target_node);
+
+            // If you inserted a direct child increment
+            // the balance factor
+            if (result == INSERT_NODE_INSERTED)
+            {
+                // Set parent node
+                (*target_node)->left->parent = *target_node;
+
+                // Only return inserted for 
+                result = INSERT_NODE_NO_OP;
+            }
         }
     }
 #else
@@ -333,10 +330,14 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
 #endif
     if (result != INSERT_NODE_FAILED)
     {
+        // If a decendant has been added then calculate 
+        // the balance factor by addition
+        (*target_node)->balance_factor = calculate_balance_factor(*target_node);
+
         if (rebalance_if_neccessary(*target_node) != 0)
         {
             // A rebalance will always subtract the height
-            (*height)--;
+            //(*height)--;
         }
     }
     return result;
