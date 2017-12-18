@@ -28,6 +28,12 @@ static void* my_gballoc_realloc(void* ptr, size_t size)
     return realloc(ptr, size);
 }
 
+static void remove_callback(void* data)
+{
+    //DATA_VALUE
+    (void)data;
+}
+
 #include "binary_tree.h"
 
 #ifdef __cplusplus
@@ -39,12 +45,20 @@ extern "C"
 #endif
 
 static const NODE_KEY INSERT_FOR_NO_ROTATION[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
+static const char* VISUAL_NO_ROTATION = "a(5(3)(7))(b(c))";
+
 static const NODE_KEY INSERT_FOR_NO_ROTATION_2[] = { 0xa, 0xc, 0x5, 0x7, 0xb, 0x3 };
+static const char* VISUAL_NO_ROTATION_2 = "a(5(3)(7))(c(b))";
+
 static const size_t INSERT_NO_ROTATION_HEIGHT = 3;
 static const NODE_KEY INSERT_FOR_RIGHT_ROTATION[] = { 0xa, 0xb, 0x7, 0x5, 0x3 };
+static const char* VISUAL_RIGHT_ROTATION = "a(5(3)(7))(b)";
 
 static const NODE_KEY INSERT_FOR_RIGHT_LEFT_ROTATION[] = { 0x10, 0x14, 0xe, 0xa, 0xc };
+static const char* VISUAL_RIGHT_LEFT_ROTATION = "10(c(a)(e))(14)";
+
 static const NODE_KEY INSERT_FOR_LEFT_RIGHT_ROTATION[] = { 0xa, 0x6, 0xd, 0x12, 0xe };
+static const char* VISUAL_LEFT_RIGHT_ROTATION = "a(6)(e(d)(12))";
 static const NODE_KEY INVALID_ITEM = 0x01;
 
 static void* DATA_VALUE = (void*)0x11;
@@ -79,6 +93,13 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     TEST_FUNCTION_CLEANUP(method_cleanup)
     {
         TEST_MUTEX_RELEASE(g_testByTest);
+    }
+
+    static void assert_visual_check(BINARY_TREE_HANDLE handle, const char* expected)
+    {
+        char* visual_check = binary_tree_construct_visual(handle);
+        ASSERT_ARE_EQUAL(char_ptr, expected, visual_check);
+        free(visual_check);
     }
 
     static int should_skip_index(size_t current_index, const size_t skip_array[], size_t length)
@@ -160,6 +181,8 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
+        assert_visual_check(handle, "4");
+
 
         //cleanup
         binary_tree_destroy(handle);
@@ -179,6 +202,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
         }
+        assert_visual_check(handle, VISUAL_RIGHT_ROTATION);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -198,6 +222,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
         }
+        assert_visual_check(handle, VISUAL_RIGHT_LEFT_ROTATION);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -217,6 +242,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
         }
+        assert_visual_check(handle, VISUAL_LEFT_RIGHT_ROTATION);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -229,6 +255,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //act
         const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xb, 0xd };
+        const char* VISUAL_LEFT_ROTATION = "7(5)(b(a)(d))";
 
         size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
         for (size_t index = 0; index < count; index++)
@@ -238,6 +265,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
         }
+        assert_visual_check(handle, VISUAL_LEFT_ROTATION);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -250,6 +278,8 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //act
         static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xd, 0xb };
+        const char* VISUAL_LEFT_ROTATION = "7(5)(b(a)(d))";
+
         size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
         for (size_t index = 0; index < count; index++)
         {
@@ -258,6 +288,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
         }
+        assert_visual_check(handle, VISUAL_LEFT_ROTATION);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -422,7 +453,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //arrange
 
         //act
-        int result = binary_tree_remove(NULL, INSERT_FOR_NO_ROTATION[0]);
+        int result = binary_tree_remove(NULL, INSERT_FOR_NO_ROTATION[0], remove_callback);
 
         //assert
         ASSERT_ARE_NOT_EQUAL(int, 0, result);
@@ -441,7 +472,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[2]);
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[2], remove_callback);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
@@ -466,7 +497,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        int result = binary_tree_remove(handle, REMOVE_TWO_CHILDREN_2[1]);
+        int result = binary_tree_remove(handle, REMOVE_TWO_CHILDREN_2[1], remove_callback);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
@@ -489,7 +520,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[1]);
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[1], remove_callback);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
@@ -512,7 +543,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION_2[1]);
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION_2[1], remove_callback);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
@@ -527,47 +558,48 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     TEST_FUNCTION(binary_tree_remove_node_no_children_2_succeed)
     {
         //arrange
-        /*BINARY_TREE_HANDLE handle = binary_tree_create();
+        BINARY_TREE_HANDLE handle = binary_tree_create();
         size_t count = sizeof(INSERT_FOR_NO_ROTATION);
-        for (size_t index = 0; index < count; index++)
-        {
-        (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
-        }
+        const char* VISUAL_NO_ROTATION_AFTER_REMOVE = "a(5(7))(b(c))";
 
-        //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[count-1]);
-
-        //assert
-        ASSERT_ARE_EQUAL(int, 0, result);
-
-        // Use as verification since it touches every node
-        binary_tree_print(handle);
-
-        //cleanup
-        binary_tree_destroy(handle);*/
-    }
-
-    TEST_FUNCTION(binary_tree_remove_node_no_children_succeed)
-    {
-        //arrange
-        /*BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
         }
 
         //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[count-1]);
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[count-1], remove_callback);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
-
-        // Use as verification since it touches every node
-        binary_tree_print(handle);
+        assert_visual_check(handle, VISUAL_NO_ROTATION_AFTER_REMOVE);
 
         //cleanup
-        binary_tree_destroy(handle);*/
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_remove_node_no_children_succeed)
+    {
+        //arrange 
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        const char* VISUAL_NO_ROTATION_AFTER_REMOVE = "a(5(3))(b(c))";
+
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[3], remove_callback);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+        assert_visual_check(handle, VISUAL_NO_ROTATION_AFTER_REMOVE);
+
+
+        //cleanup
+        binary_tree_destroy(handle);
     }
 
     TEST_FUNCTION(binary_tree_remove_root_succeed)
@@ -575,19 +607,44 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
         size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        static const char* VISUAL_NO_ROTATION_AFTER_REMOVE = "b(5(3)(7))(c)";
+
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
         }
 
         //act
-        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[0]);
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[0], remove_callback);
 
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
 
-        // Use as verification since it touches every node
-        binary_tree_print(handle);
+        assert_visual_check(handle, VISUAL_NO_ROTATION_AFTER_REMOVE);
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_remove_root_2_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        static const char* VISUAL_NO_ROTATION_AFTER_REMOVE = "b(5(3)(7))(c)";
+
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        int result = binary_tree_remove(handle, INSERT_FOR_NO_ROTATION[0], remove_callback);
+
+        //assert
+        ASSERT_ARE_EQUAL(int, 0, result);
+
+        assert_visual_check(handle, VISUAL_NO_ROTATION_AFTER_REMOVE);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -604,12 +661,64 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        int result = binary_tree_remove(handle, INVALID_ITEM);
+        int result = binary_tree_remove(handle, INVALID_ITEM, remove_callback);
 
         //assert
         ASSERT_ARE_NOT_EQUAL(int, 0, result);
 
         //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_construct_visual_handle_NULL_fail)
+    {
+        //arrange
+        //act
+        char* result = binary_tree_construct_visual(NULL);
+
+        //assert
+        ASSERT_IS_NULL(result);
+
+        //cleanup
+    }
+
+    TEST_FUNCTION(binary_tree_construct_visual_no_items_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        char* result = binary_tree_construct_visual(handle);
+
+        //assert
+        ASSERT_IS_NOT_NULL(result);
+        ASSERT_ARE_EQUAL(char_ptr, "", result);
+
+        //cleanup
+        free(result);
+        binary_tree_destroy(handle);
+    }
+
+
+    TEST_FUNCTION(binary_tree_construct_visual_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+        }
+
+        //act
+        char* result = binary_tree_construct_visual(handle);
+
+        //assert
+        ASSERT_IS_NOT_NULL(result);
+        ASSERT_ARE_EQUAL(char_ptr, VISUAL_NO_ROTATION, result);
+
+        //cleanup
+        free(result);
         binary_tree_destroy(handle);
     }
 

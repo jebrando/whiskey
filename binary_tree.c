@@ -9,6 +9,10 @@
 #include "logging.h"
 
 #define USE_RECURSION
+#define NUM_OF_CHARS    8
+static const char LEFT_PARENTHESIS = '(';
+static const char RIGHT_PARENTHESIS = ')';
+
 
 typedef struct NODE_INFO_TAG
 {
@@ -30,6 +34,46 @@ typedef struct BINARY_TREE_INFO_TAG
     size_t height;
     NODE_INFO* root_node;
 } BINARY_TREE_INFO;
+
+static int construct_visual_representation(const NODE_INFO* node_info, char* visualization, size_t pos)
+{
+    /*
+            10
+           /  \
+          5    15
+         / \   / \
+        3   7 11  18
+
+        10(5(3)(7))(15(11)(18)))
+    */
+    // [1, 2, 3, 4]
+    // 1(2(4))(3)
+
+    if (node_info != NULL)
+    {
+        char temp[8];
+        int len = sprintf(temp, "%x", node_info->key);
+        memcpy(visualization+pos, temp, len);
+        pos += len;
+        if (node_info->left != NULL)
+        {
+            memcpy(visualization + pos, &LEFT_PARENTHESIS, 1);
+            pos += 1;
+            pos = construct_visual_representation(node_info->left, visualization, pos);
+            memcpy(visualization + pos, &RIGHT_PARENTHESIS, 1);
+            pos += 1;
+        }
+        if (node_info->right != NULL)
+        {
+            memcpy(visualization + pos, &LEFT_PARENTHESIS, 1);
+            pos += 1;
+            pos = construct_visual_representation(node_info->right, visualization, pos);
+            memcpy(visualization + pos, &RIGHT_PARENTHESIS, 1);
+            pos += 1;
+        }
+    }
+    return pos;
+}
 
 static int calculate_balance_factor(const NODE_INFO* node_info)
 {
@@ -140,9 +184,11 @@ static int rebalance_if_neccessary(NODE_INFO* node_info)
         // Do Left right rotation
         // Make the left child, a child of the left's right node
         node_info->right->left->right = node_info->right;
+        node_info->right->left->right->height--;
         node_info->right->parent = node_info->right->left;
         node_info->right->left->parent = node_info;
         node_info->right = node_info->right->left;
+        node_info->right->height++;
         node_info->right->right->left = NULL;
         // Do the left rotation
         rotate_left(node_info);
@@ -152,9 +198,11 @@ static int rebalance_if_neccessary(NODE_INFO* node_info)
     {
         // Do right left rotation
         node_info->left->right->left = node_info->left;
+        node_info->left->right->left->height--;
         node_info->left->parent = node_info->left->right;
         node_info->left->right->parent = node_info;
         node_info->left = node_info->left->right;
+        node_info->left->height++;
         node_info->left->left->right = NULL;
         // Now do a right rotation
         rotate_right(node_info);
@@ -287,27 +335,32 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
     }
 #else
     int continue_run = 1;
-    NODE_INFO* prev_node = NULL;
+    result = INSERT_NODE_INSERTED;
     if (*target_node == NULL)
     {
         *target_node = new_node;
-        result = 0;
-        (*height)++;
+        (*target_node)->height++;
     }
     else
     {
-        NODE_INFO* current_node = *target_node;
+        NODE_INFO* increment_node = NULL;
+        NODE_INFO* prev_node = NULL;
+        NODE_INFO* current_node = prev_node = *target_node;
         do
         {
-            (*height)++;
             if (new_node->key > current_node->key)
             {
                 if (current_node->right == NULL)
                 {
                     current_node->right = new_node;
-                    current_node->right->parent = prev_node;
-                    current_node->right->
+                    current_node->right->parent = current_node;
+                    current_node->right->height = 1;
                     continue_run = 0;
+                    // If the current_node->left is NULL then increment height
+                    if (current_node->left == NULL)
+                    {
+                        increment_node = current_node->right;
+                    }
                 }
                 else
                 {
@@ -317,16 +370,43 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
             }
             else if (new_node->key < current_node->key)
             {
-                prev_node = current_node;
-                current_node = current_node->left;
+                if (current_node->left == NULL)
+                {
+                    current_node->left = new_node;
+                    current_node->left->parent = current_node;
+                    current_node->left->height = 1;
+                    continue_run = 0;
+                }
+                else
+                {
+                    prev_node = current_node;
+                    current_node = current_node->left;
+                }
+                // If the current_node->left is NULL then increment height
+                if (current_node->right == NULL)
+                {
+                    increment_node = current_node->left;
+                }
             }
             else
             {
                 // Failure 
                 continue_run = 0;
-                result = INSERT_NODE_FAILURE;
+                result = INSERT_NODE_FAILED;
             }
         } while (continue_run != 0);
+
+
+        if (increment_node != NULL)
+        {
+            NODE_INFO* parent_node = increment_node->parent;
+            // Go up the tree and increment height of parents
+            while (parent_node != NULL)
+            {
+                parent_node->height++;
+                parent_node = parent_node->parent;
+            }
+        }
     }
 
 #endif
@@ -344,9 +424,10 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
     return result;
 }
 
-static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
+static int remove_node(NODE_INFO** root_node, const NODE_KEY* node_key, tree_remove_callback remove_callback)
 {
     int result;
+    NODE_INFO* node_info = *root_node;
     NODE_INFO* current_node = find_node(node_info, node_key);
     if (current_node == NULL)
     {
@@ -355,6 +436,11 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
     else
     {
         NODE_INFO* previous_node = current_node->parent;
+
+        if (remove_callback != NULL)
+        {
+            remove_callback(current_node->data);
+        }
 
         // Remove the node
         result = 0;
@@ -424,7 +510,6 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
         // Replace Node with smallest value in right subtree
         else if (current_node->left != NULL && current_node->right != NULL)
         {
-            //NODE_INFO* check_node = current_node->right;
             // If the node's right child has a left child
             // Move all the way down left to locate smallest element
             if ((current_node->right)->left != NULL)
@@ -445,24 +530,77 @@ static int remove_node(NODE_INFO* node_info, const NODE_KEY* node_key)
             else
             {
                 NODE_INFO* temp = current_node;
-                // Find the parent node that points to this
-                // and change it
-                if (temp->parent->right == temp)
+                if (temp->parent == NULL)
                 {
-                    temp->parent->right = temp->right;
-                    temp->parent->balance_factor--;
+                    // deleting the root
+                    // Find the min key in the right subtree 
+                    NODE_INFO* min_node;
+                    NODE_INFO* observe_node = min_node = temp->right->left;
+                    if (observe_node == NULL)
+                    {
+                        min_node = temp->right;
+                    }
+                    else
+                    {
+                        do
+                        {
+                            if (observe_node->key < min_node->key)
+                            {
+                                min_node = observe_node;
+                            }
+                            observe_node = observe_node->left;
+                        } while (observe_node != NULL);
+                    }
+                    if (min_node->right != NULL)
+                    {
+                        // Exchange the min_node->right with min_node
+                        if (min_node->parent != current_node)
+                        {
+                            min_node->parent->left = min_node->right;
+                        }
+                        min_node->right->parent = min_node->parent;
+                        min_node->right->height = min_node->height;
+                    }
+                    else if (min_node->parent != current_node && min_node->parent->left != NULL)
+                    {
+                        min_node->parent->left = NULL;
+                    }
+                    min_node->parent = NULL;
+                    min_node->height = current_node->height;
+                    if (current_node->right != NULL && min_node != current_node->right)
+                    {
+                        min_node->right = current_node->right;
+                        current_node->right->parent = min_node;
+                    }
+                    if (current_node->left != NULL && min_node != current_node->left)
+                    {
+                        min_node->left = current_node->left;
+                        current_node->left->parent = min_node;
+                    }
+                    *root_node = min_node;
+                    free(current_node);
                 }
                 else
                 {
-                    temp->parent->left = temp->right;
-                    temp->parent->balance_factor++;
+                    // Find the parent node that points to this
+                    // and change it
+                    if (temp->parent->right == temp)
+                    {
+                        temp->parent->right = temp->right;
+                        temp->parent->balance_factor--;
+                    }
+                    else
+                    {
+                        temp->parent->left = temp->right;
+                        temp->parent->balance_factor++;
+                    }
+                    current_node->right->parent = temp->parent;
+                    current_node->right->left = temp->left;
+                    current_node = temp->right;
+                    current_node->balance_factor--;
+                    //current_node->parent = current_node->parent;
+                    free(temp);
                 }
-                current_node->right->parent = temp->parent;
-                current_node->right->left = temp->left;
-                current_node = temp->right;
-                current_node->balance_factor--;
-                //current_node->parent = current_node->parent;
-                free(temp);
             }
         }
     }
@@ -582,7 +720,7 @@ int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_KEY value, void* data)
     return result;
 }
 
-int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value)
+int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value, tree_remove_callback remove_callback)
 {
     (void)value;
     int result;
@@ -593,7 +731,7 @@ int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value)
     }
     else
     {
-        result = remove_node(handle->root_node, &value);
+        result = remove_node(&handle->root_node, &value, remove_callback);
         if (result == 0)
         {
             handle->items-- ;
@@ -666,4 +804,31 @@ void binary_tree_print(BINARY_TREE_HANDLE handle)
     {
         print_tree(handle->root_node, 0);
     }
+}
+
+char* binary_tree_construct_visual(BINARY_TREE_HANDLE handle)
+{
+    char* result;
+    if (handle == NULL)
+    {
+        LogError("FAILURE: Invalid handle specified on construct visual");
+        result = NULL;
+    }
+    else
+    {
+        // Allocate the result
+        if (handle->items > 0)
+        {
+            size_t len = (handle->items*NUM_OF_CHARS) + (handle->items * 2);
+            result = (char*)malloc(len + 1);
+            memset(result, 0, len + 1);
+            construct_visual_representation(handle->root_node, result, 0);
+        }
+        else
+        {
+            result = (char*)malloc(1);
+            result[0] = '\0';
+        }
+    }
+    return result;
 }

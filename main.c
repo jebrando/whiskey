@@ -9,9 +9,8 @@
 #include "binary_tree.h"
 #include "stopwatch.h"
 
-//static const NODE_KEY KEY_VALUES[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
 // Right Rotation
-static const NODE_KEY KEY_VALUES[] = { 0xa, 0xb, 0x7, 0x5, 0x3, 0xc };
+static const NODE_KEY KEY_VALUES[] = { 0xa, 0xf, 0x5, 0xb, 0x7, 0x3, 0x12 };
 
 static const NODE_KEY INVALID_ITEM = 0x01;
 
@@ -69,7 +68,8 @@ int main(void)
         size_t count = sizeof(KEY_VALUES);
         if (insert_items(handle, KEY_VALUES, count) == 0)
         {
-            binary_tree_print(handle);
+            //binary_tree_print(handle);
+            //binary_tree_construct_visual(handle);
 
             // Find a valid item
             if (find_item(handle, KEY_VALUES[1]) != 0)

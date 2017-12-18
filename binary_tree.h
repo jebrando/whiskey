@@ -14,6 +14,8 @@ extern "C" {
 
 typedef struct BINARY_TREE_INFO_TAG* BINARY_TREE_HANDLE;
 
+typedef void (*tree_remove_callback)(void* data);
+
 // Used as the type value
 typedef unsigned char NODE_KEY;
 
@@ -21,7 +23,7 @@ extern BINARY_TREE_HANDLE binary_tree_create();
 extern void binary_tree_destroy(BINARY_TREE_HANDLE handle);
 
 extern int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_KEY value, void* data);
-extern int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value);
+extern int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value, tree_remove_callback remove_callback);
 extern void* binary_tree_find(BINARY_TREE_HANDLE handle, NODE_KEY find_value);
 
 
@@ -29,7 +31,7 @@ extern void* binary_tree_find(BINARY_TREE_HANDLE handle, NODE_KEY find_value);
 extern size_t binary_tree_item_count(BINARY_TREE_HANDLE handle);
 extern size_t binary_tree_height(BINARY_TREE_HANDLE handle);
 extern void binary_tree_print(BINARY_TREE_HANDLE handle);
-extern char* binary_tree_get_order(BINARY_TREE_HANDLE handle);
+extern char* binary_tree_construct_visual(BINARY_TREE_HANDLE handle);
 
 #ifdef __cplusplus
 }
