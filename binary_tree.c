@@ -4,14 +4,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "binary_tree.h"
 #include "logging.h"
 
-#define USE_RECURSION
+//#define USE_RECURSION
+#define TREE_COLOR      uint8_t
+#define BLACK_COLOR     0
+#define RED_COLOR       1
 #define NUM_OF_CHARS    8
 static const char LEFT_PARENTHESIS = '(';
 static const char RIGHT_PARENTHESIS = ')';
+
 
 
 typedef struct NODE_INFO_TAG
@@ -26,6 +32,7 @@ typedef struct NODE_INFO_TAG
     // child on left = +1
     int balance_factor;
     size_t height;
+    TREE_COLOR node_color;
 } NODE_INFO;
 
 typedef struct BINARY_TREE_INFO_TAG
@@ -34,6 +41,49 @@ typedef struct BINARY_TREE_INFO_TAG
     size_t height;
     NODE_INFO* root_node;
 } BINARY_TREE_INFO;
+
+static bool is_red(const NODE_INFO* node_info)
+{
+    bool result = false;
+    if (node_info != NULL)
+    {
+        result = (node_info->node_color == RED_COLOR);
+    }
+    return result;
+}
+
+static NODE_INFO* get_grandparent(const NODE_INFO* node_info)
+{
+    NODE_INFO* result = NULL;
+    if (node_info->parent != NULL)
+    {
+        result = node_info->parent->parent;
+    }
+    return result;
+}
+
+static NODE_INFO* get_sibling(const NODE_INFO* node_info)
+{
+    NODE_INFO* result = NULL;
+    if (node_info->parent != NULL)
+    {
+        if (node_info->parent->left == node_info)
+            result = node_info->parent->right;
+        else
+            result = node_info->parent->left;
+    }
+    return result;
+}
+
+static NODE_INFO* get_uncle(const NODE_INFO* node_info)
+{
+    NODE_INFO* result = NULL;
+    if (node_info->parent != NULL)
+    {
+        result = get_sibling(node_info->parent);
+    }
+    return result;
+}
 
 static int construct_visual_representation(const NODE_INFO* node_info, char* visualization, size_t pos)
 {
@@ -93,6 +143,7 @@ static NODE_INFO* create_new_node(NODE_KEY key_value, void* data)
     else
     {
         memset(result, 0, sizeof(NODE_INFO));
+        result->node_color = RED_COLOR;
         result->key = key_value;
         result->data = data;
     }
@@ -137,82 +188,36 @@ static void rotate_right(NODE_INFO* node_info)
 
 static void rotate_left(NODE_INFO* node_info)
 {
-    NODE_INFO* tpm_node = node_info;
-
-    node_info->parent->right = node_info->right;
-    // The current node gets moved down
-    node_info->height--;
-
-    node_info->parent->right->balance_factor = 0;
-    node_info->parent->right->parent = node_info->parent;
-    node_info->parent->balance_factor++;
-    tpm_node->parent = node_info->parent->right;
-    if (node_info->parent->right->left == NULL)
+    NODE_INFO* new_node = node_info->right;
+    if (new_node != NULL)
     {
-        node_info->parent->left = tpm_node;
-        tpm_node->right = tpm_node->left = NULL;
-        tpm_node->balance_factor = 0;
-        tpm_node->height = tpm_node->parent->height-1;
-    }
-    else
-    {
-        tpm_node->right = node_info->parent->left->right;
-        tpm_node->left = NULL;
-        tpm_node->height = tpm_node->parent->height - 1;
-        node_info->parent->right->left = tpm_node;
-        tpm_node->balance_factor = 1;
+        node_info->right = new_node->left;
+        new_node->left = node_info;
+        new_node->parent = node_info->parent;
+        node_info->parent = new_node;
     }
 }
 
 static int rebalance_if_neccessary(NODE_INFO* node_info)
 {
-    int result;
-    if (node_info->balance_factor < -1 && node_info->right->balance_factor == -1)
+    if (node_info->parent == NULL)
     {
-        rotate_left(node_info);
-        result = 1;
-        LogDebug("rotate right");
+        node_info->node_color = BLACK_COLOR;
     }
-    else if (node_info->balance_factor > 1 && node_info->left->balance_factor == 1)
+    // is the parent black
+    else if (!is_red(node_info->parent))
     {
-        rotate_right(node_info);
-        result = -1;
-        LogDebug("rotate left");
+        // Everything is find nothing to do here
     }
-    else if (node_info->balance_factor < -1 && node_info->right->balance_factor == 1)
+    // Is the uncle red
+    else if (is_red(get_uncle(node_info) ) )
     {
-        // Do Left right rotation
-        // Make the left child, a child of the left's right node
-        node_info->right->left->right = node_info->right;
-        node_info->right->left->right->height--;
-        node_info->right->parent = node_info->right->left;
-        node_info->right->left->parent = node_info;
-        node_info->right = node_info->right->left;
-        node_info->right->height++;
-        node_info->right->right->left = NULL;
-        // Do the left rotation
-        rotate_left(node_info);
-        result = 1;
+        node_info->parent->node_color = BLACK_COLOR;
+        get_uncle(node_info)->node_color = BLACK_COLOR;
+        NODE_INFO* gp = get_grandparent(node_info);
+        if (gp)
+
     }
-    else if (node_info->balance_factor > 1 && node_info->left->balance_factor == -1)
-    {
-        // Do right left rotation
-        node_info->left->right->left = node_info->left;
-        node_info->left->right->left->height--;
-        node_info->left->parent = node_info->left->right;
-        node_info->left->right->parent = node_info;
-        node_info->left = node_info->left->right;
-        node_info->left->height++;
-        node_info->left->left->right = NULL;
-        // Now do a right rotation
-        rotate_right(node_info);
-        result = -1;
-    }
-    else
-    {
-        result = 0;
-    }
-    return result;
 }
 
 static int compare_node_values(const NODE_KEY* value_1, const NODE_KEY* value_2)
@@ -338,12 +343,11 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
     result = INSERT_NODE_INSERTED;
     if (*target_node == NULL)
     {
+        // Insert the root
         *target_node = new_node;
-        (*target_node)->height++;
     }
     else
     {
-        NODE_INFO* increment_node = NULL;
         NODE_INFO* prev_node = NULL;
         NODE_INFO* current_node = prev_node = *target_node;
         do
@@ -356,11 +360,6 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
                     current_node->right->parent = current_node;
                     current_node->right->height = 1;
                     continue_run = 0;
-                    // If the current_node->left is NULL then increment height
-                    if (current_node->left == NULL)
-                    {
-                        increment_node = current_node->right;
-                    }
                 }
                 else
                 {
@@ -382,40 +381,19 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
                     prev_node = current_node;
                     current_node = current_node->left;
                 }
-                // If the current_node->left is NULL then increment height
-                if (current_node->right == NULL)
-                {
-                    increment_node = current_node->left;
-                }
             }
             else
             {
-                // Failure 
+                // Failure the keys are equal
                 continue_run = 0;
                 result = INSERT_NODE_FAILED;
             }
         } while (continue_run != 0);
-
-
-        if (increment_node != NULL)
-        {
-            NODE_INFO* parent_node = increment_node->parent;
-            // Go up the tree and increment height of parents
-            while (parent_node != NULL)
-            {
-                parent_node->height++;
-                parent_node = parent_node->parent;
-            }
-        }
     }
 
 #endif
     if (result != INSERT_NODE_FAILED)
     {
-        // If a decendant has been added then calculate 
-        // the balance factor by addition
-        (*target_node)->balance_factor = calculate_balance_factor(*target_node);
-
         if (rebalance_if_neccessary(*target_node) != 0)
         {
             result = INSERT_NODE_REBALANCE;
