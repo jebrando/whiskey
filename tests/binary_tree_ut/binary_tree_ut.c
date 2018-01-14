@@ -11,6 +11,8 @@
 #include <stddef.h>
 #endif
 
+#include <windows.h>
+
 #include "testrunnerswitcher.h"
 
 static void* my_gballoc_malloc(size_t size)
@@ -44,13 +46,20 @@ extern "C"
 }
 #endif
 
+static const NODE_KEY BASIC_INSERT_FOR_NODES[] = { 0xa, 0xc, 0xe };
+static const NODE_KEY BASIC_INSERT_2_FOR_NODES[] = { 0xe, 0xc, 0xa };
+static const char* VISUAL_BASIC_INSERT = "c(a)(e)";
+
+static const NODE_KEY COMPLEX_INSERT_FOR_NODES[] = { 0x8, 0x12, 0x5, 0xf, 0x11, 0x19, 0x28, 0x50 };
+static const char* VISUAL_COMPLEX_INSERT = "11(8(5)(f))(19(12)(28(50)))";
+
+static const size_t INSERT_NO_ROTATION_HEIGHT = 3;
 static const NODE_KEY INSERT_FOR_NO_ROTATION[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
 static const char* VISUAL_NO_ROTATION = "a(5(3)(7))(b(c))";
 
 static const NODE_KEY INSERT_FOR_NO_ROTATION_2[] = { 0xa, 0xc, 0x5, 0x7, 0xb, 0x3 };
 static const char* VISUAL_NO_ROTATION_2 = "a(5(3)(7))(c(b))";
 
-static const size_t INSERT_NO_ROTATION_HEIGHT = 3;
 static const NODE_KEY INSERT_FOR_RIGHT_ROTATION[] = { 0xa, 0xb, 0x7, 0x5, 0x3 };
 static const char* VISUAL_RIGHT_ROTATION = "a(5(3)(7))(b)";
 
@@ -58,7 +67,7 @@ static const NODE_KEY INSERT_FOR_RIGHT_LEFT_ROTATION[] = { 0x10, 0x14, 0xe, 0xa,
 static const char* VISUAL_RIGHT_LEFT_ROTATION = "10(c(a)(e))(14)";
 
 static const NODE_KEY INSERT_FOR_LEFT_RIGHT_ROTATION[] = { 0xa, 0x6, 0xd, 0x12, 0xe };
-static const char* VISUAL_LEFT_RIGHT_ROTATION = "a(6)(e(d)(12))";
+static const char* VISUAL_LEFT_RIGHT_ROTATION = "a(6)(e(d)(12))"; 
 static const NODE_KEY INVALID_ITEM = 0x01;
 
 static void* DATA_VALUE = (void*)0x11;
@@ -170,7 +179,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
     }
 
-    TEST_FUNCTION(binary_tree_insert_succeed)
+    TEST_FUNCTION(binary_tree_insert_one_item_succeed)
     {
         //arrange
         NODE_KEY insert_key = 0x4;
@@ -182,6 +191,105 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //assert
         ASSERT_ARE_EQUAL(int, 0, result);
         assert_visual_check(handle, "4");
+
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_insert_basic_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(BASIC_INSERT_FOR_NODES);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, BASIC_INSERT_FOR_NODES[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //assert
+        assert_visual_check(handle, VISUAL_BASIC_INSERT);
+
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_insert_2_basic_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(BASIC_INSERT_2_FOR_NODES);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, BASIC_INSERT_2_FOR_NODES[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //assert
+        assert_visual_check(handle, VISUAL_BASIC_INSERT);
+
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_insert_no_rotate_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+        }
+
+        //assert
+        assert_visual_check(handle, VISUAL_NO_ROTATION);
+
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_insert_complex_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        //act
+        size_t count = sizeof(COMPLEX_INSERT_FOR_NODES);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, COMPLEX_INSERT_FOR_NODES[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+
+            char* visual_check = binary_tree_construct_visual(handle);
+
+            OutputDebugStringA(visual_check);
+            OutputDebugStringA("\r\n");
+            free(visual_check);
+
+        }
+
+        //assert
+        assert_visual_check(handle, VISUAL_COMPLEX_INSERT);
 
 
         //cleanup
@@ -293,7 +401,6 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
-
 
     TEST_FUNCTION(binary_tree_find_handle_NULL_fail)
     {
@@ -439,10 +546,10 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         }
 
         //act
-        size_t item_count = binary_tree_height(handle);
+        size_t item_height = binary_tree_height(handle);
 
         //assert
-        ASSERT_ARE_EQUAL(size_t, INSERT_NO_ROTATION_HEIGHT, item_count);
+        ASSERT_ARE_EQUAL(size_t, INSERT_NO_ROTATION_HEIGHT, item_height);
 
         //cleanup
         binary_tree_destroy(handle);
@@ -461,6 +568,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
     }
 
+#if 0
     TEST_FUNCTION(binary_tree_remove_two_children_succeed)
     {
         //arrange
@@ -669,6 +777,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
+#endif
 
     TEST_FUNCTION(binary_tree_construct_visual_handle_NULL_fail)
     {

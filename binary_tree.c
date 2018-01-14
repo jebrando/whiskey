@@ -20,17 +20,12 @@ static const char RIGHT_PARENTHESIS = ')';
 
 typedef struct NODE_INFO_TAG
 {
+    TREE_COLOR node_color;
     NODE_KEY key;
-    void* data;
     struct NODE_INFO_TAG* parent;
     struct NODE_INFO_TAG* right;
     struct NODE_INFO_TAG* left;
-    // Keeps track of the child nodes balance
-    // child on right = -1
-    // child on left = +1
-    int balance_factor;
-    size_t height;
-    TREE_COLOR node_color;
+    void* data;
 } NODE_INFO;
 
 typedef struct BINARY_TREE_INFO_TAG
@@ -133,14 +128,6 @@ static int construct_visual_representation(const NODE_INFO* node_info, char* vis
     return pos;
 }
 
-static int calculate_balance_factor(const NODE_INFO* node_info)
-{
-    int result;
-    result = node_info->left == NULL ? 0 : node_info->left->height;
-    result -= node_info->right == NULL ? 0 : node_info->right->height;
-    return result;
-}
-
 static NODE_INFO* create_new_node(NODE_KEY key_value, void* data)
 {
     NODE_INFO* result;
@@ -170,87 +157,183 @@ static void print_tree(const NODE_INFO* node_info, size_t indent_level)
     }
 }
 
-static void rotate_right(NODE_INFO* node_info)
+static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node)
 {
-    NODE_INFO* new_node = node_info->left;
-    if (new_node != NULL)
+    if (pivot_node->left != NULL)
     {
-        node_info->left = new_node->right;
-        new_node->right = node_info;
-        new_node->parent = node_info->parent;
-    }
-}
+        NODE_INFO* temp = pivot_node->right;
 
-static void rotate_left(NODE_INFO* node_info)
-{
-    NODE_INFO* new_node = node_info->right;
-    if (new_node != NULL)
-    {
-        node_info->right = new_node->left;
-        if (new_node->left != NULL)
+        // Is parent the root
+        if (pivot_node->parent == *root_node)
         {
-            new_node->left->parent = node_info;
-        }
-        new_node->parent = node_info->parent;
-        if (node_info->parent == NULL)
-        {
+            pivot_node->right = pivot_node->parent;
+            pivot_node->right->parent = pivot_node;
+
+            *root_node = pivot_node;
+            pivot_node->parent = NULL;
         }
         else
         {
-        }
+            NODE_INFO* gparent = get_grandparent(pivot_node);
 
-        new_node->left = node_info;
-        node_info->parent = new_node;
+            pivot_node->right = pivot_node->parent;
+            pivot_node->right->parent = pivot_node;
+
+            pivot_node->parent = gparent;
+            if (gparent->left == pivot_node->right)
+            {
+                gparent->left = pivot_node;
+            }
+            else
+            {
+                gparent->right = pivot_node;
+            }
+        }
+        pivot_node->node_color = BLACK_COLOR;
+        pivot_node->right->node_color = RED_COLOR;
+        pivot_node->right->left = temp;
     }
 }
 
-static int rebalance_if_neccessary(NODE_INFO* node_info)
+static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node)
 {
-    if (node_info->parent == NULL)
+    if (pivot_node->right != NULL)
+    {
+        NODE_INFO* temp = pivot_node->left;
+
+        // Is the parent the root
+        if (pivot_node->parent == *root_node)
+        {
+            pivot_node->left = pivot_node->parent;
+            pivot_node->left->parent = pivot_node;
+
+            *root_node = pivot_node;
+            pivot_node->parent = NULL;
+        }
+        else
+        {
+            NODE_INFO* gparent = get_grandparent(pivot_node);
+
+            pivot_node->left = pivot_node->parent;
+            pivot_node->left->parent = pivot_node;
+
+            pivot_node->parent = gparent;
+            if (gparent->right == pivot_node->left)
+            {
+                gparent->right = pivot_node;
+            }
+            else
+            {
+                gparent->left = pivot_node;
+            }
+        }
+        pivot_node->node_color = BLACK_COLOR;
+        pivot_node->left->node_color = RED_COLOR;
+        pivot_node->left->right = temp;
+    }
+}
+
+static NODE_INFO* rebalance_if_neccessary(NODE_INFO** root_node, NODE_INFO* node_info, size_t* height)
+{
+    NODE_INFO* result;
+    if (node_info == *root_node)
     {
         node_info->node_color = BLACK_COLOR;
+        result = NULL;
     }
     // is the parent black
     else if (is_black(node_info->parent))
     {
         // Everything is find nothing to do here
+        result = NULL;
     }
-    else
+    else // Parent is red
     {
-        // Parent is red
+        result = NULL;
         NODE_INFO* uncle = get_uncle(node_info);
         if (uncle == NULL)
         {
             // Need to do a rotation
-            if (node_info->parent->parent->left == NULL)
+            NODE_INFO* grandparent = get_grandparent(node_info);
+            if (node_info->parent->right == node_info && grandparent->left == node_info->parent)
             {
-                rotate_left(node_info);
+                // If the Node is a right child and the parent is a left child
+                // swap and rotate
+                grandparent->left = node_info;
+                node_info->left = node_info->parent;
+                node_info->parent->right = NULL;
+                node_info->parent->parent = node_info;
+                node_info->parent = grandparent;
+
+                //rotate_left(root_node, node_info->parent);
+                rotate_right(root_node, node_info);
+                (*height)--;
+            }
+            else if (node_info->parent->left == node_info && grandparent->right == node_info->parent)
+            {
+                // If the Node is a left child and the parent is a right child
+                // swap and rotate
+                grandparent->right = node_info;
+                node_info->right = node_info->parent;
+                node_info->parent->left = NULL;
+                node_info->parent->parent = node_info;
+                node_info->parent = grandparent;
+
+                //rotate_right(root_node, node_info->parent);
+                rotate_left(root_node, node_info);
+                (*height)--;
+            }
+            else if (node_info->parent->right == node_info && grandparent->right == node_info->parent)
+            {
+                rotate_left(root_node, node_info->parent);
+                (*height)--;
+            }
+            else if (node_info->parent->left == node_info && grandparent->left == node_info->parent)
+            {
+                rotate_right(root_node, node_info->parent);
+                (*height)--;
+            }
+        }
+        else if (is_red(uncle) )
+        {
+            // Check to make sure that the grandparent isn't the root
+            if (node_info->parent->parent->parent != NULL)
+            {
+                // The grandparent is not the root node
+                // so recolor the nodes ...
+                node_info->parent->node_color = BLACK_COLOR;
+                get_uncle(node_info)->node_color = BLACK_COLOR;
+                NODE_INFO* grandparent = get_grandparent(node_info);
+                grandparent->node_color = RED_COLOR;
+
+                // ... so recheck the node with the grandparent
+                result = grandparent;
             }
             else
             {
-                rotate_right(node_info);
+                // Since the parent's parent is the root then 
+                // we just need to recolor
+                node_info->parent->node_color = BLACK_COLOR;
+                get_uncle(node_info)->node_color = BLACK_COLOR;
             }
         }
-        else if (uncle->node_color == RED_COLOR)
+        else
         {
-            // TODO: Check to make sure that the parent parent isn't the root
-            node_info->node_color = uncle->node_color = BLACK_COLOR;
+            result = NULL;
+            // The uncle is black so we do the rotation
+            if (node_info->parent->right == node_info)
+            {
+                rotate_left(root_node, node_info->parent);
+                (*height)--;
+            }
+            else
+            {
+                rotate_right(root_node, node_info->parent);
+                (*height)--;
+            }
         }
     }
-
-
-    // Is the uncle red
-    else if (is_red(get_uncle(node_info) ) )
-    {
-        node_info->parent->node_color = BLACK_COLOR;
-        get_uncle(node_info)->node_color = BLACK_COLOR;
-        NODE_INFO* gp = get_grandparent(node_info);
-        if (gp)
-        {
-            gp->node_color = RED_COLOR;
-        }
-
-    }
+    return result;
 }
 
 static int compare_node_values(const NODE_KEY* value_1, const NODE_KEY* value_2)
@@ -269,21 +352,6 @@ static NODE_INFO* find_node(NODE_INFO* node_info, const NODE_KEY* value)
     }
     else
     {
-#ifdef USE_RECURSION
-        int compare_value = compare_node_values(&node_info->key, value);
-        if (compare_value > 0)
-        {
-            result = find_node(node_info->left, value);
-        }
-        else if (compare_value < 0)
-        {
-            result = find_node(node_info->right, value);
-        }
-        else
-        {
-            result = node_info;
-        }
-#else
         int compare_value;
         NODE_INFO* compare_node = node_info;
 
@@ -302,35 +370,28 @@ static NODE_INFO* find_node(NODE_INFO* node_info, const NODE_KEY* value)
             else
             {
                 result = compare_node;
+                break;
             }
         }
-#endif
     }
     return result;
 }
 
-typedef enum INSERT_NODE_TYPE_TAG
+static int insert_into_tree(NODE_INFO** root_node, NODE_INFO* new_node, size_t* height)
 {
-    INSERT_NODE_INSERTED,
-    INSERT_NODE_NO_OP,
-    INSERT_NODE_REBALANCE,
-    INSERT_NODE_FAILED
-} INSERT_NODE_TYPE;
-
-static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new_node)
-{
-    INSERT_NODE_TYPE result = INSERT_NODE_FAILED;
+    int result;
     int continue_run = 1;
-    result = INSERT_NODE_INSERTED;
-    if (*target_node == NULL)
+    size_t incremental_height = 1;
+    if (*root_node == NULL)
     {
         // Insert the root
-        *target_node = new_node;
+        *root_node = new_node;
+        result = 0;
     }
     else
     {
-        NODE_INFO* prev_node = NULL;
-        NODE_INFO* current_node = prev_node = *target_node;
+        NODE_INFO* prev_node = *root_node;
+        NODE_INFO* current_node = *root_node;
         do
         {
             if (new_node->key > current_node->key)
@@ -340,12 +401,19 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
                     current_node->right = new_node;
                     current_node->right->parent = current_node;
                     continue_run = 0;
+                    if (current_node->left == NULL)
+                    {
+                        // If no left node then we need to increment the height
+                        incremental_height++;
+                    }
                 }
                 else
                 {
                     prev_node = current_node;
                     current_node = current_node->right;
+                    incremental_height++;
                 }
+                result = 0;
             }
             else if (new_node->key < current_node->key)
             {
@@ -354,26 +422,39 @@ static INSERT_NODE_TYPE insert_into_tree(NODE_INFO** target_node, NODE_INFO* new
                     current_node->left = new_node;
                     current_node->left->parent = current_node;
                     continue_run = 0;
+                    if (current_node->right == NULL)
+                    {
+                        // If no left node then we need to increment the height
+                        incremental_height++;
+                    }
                 }
                 else
                 {
                     prev_node = current_node;
                     current_node = current_node->left;
+                    incremental_height++;
                 }
+                result = 0;
             }
             else
             {
                 // Failure the keys are equal
                 continue_run = 0;
-                result = INSERT_NODE_FAILED;
+                result = __LINE__;
             }
         } while (continue_run != 0);
     }
-    if (result != INSERT_NODE_FAILED)
+    if (result == 0)
     {
-        if (rebalance_if_neccessary(*target_node) != 0)
+        NODE_INFO* rebalance_node = new_node;
+        do
         {
-            result = INSERT_NODE_REBALANCE;
+            rebalance_node = rebalance_if_neccessary(root_node, rebalance_node, &incremental_height);
+        } while (rebalance_node != NULL);
+
+        if (incremental_height > *height)
+        {
+            *height = incremental_height;
         }
     }
     return result;
@@ -383,201 +464,106 @@ static int remove_node(NODE_INFO** root_node, const NODE_KEY* node_key, tree_rem
 {
     int result;
     NODE_INFO* node_info = *root_node;
-    NODE_INFO* current_node = find_node(node_info, node_key);
-    if (current_node == NULL)
+    NODE_INFO* del_node = find_node(node_info, node_key);
+    if (del_node == NULL)
     {
         result = __LINE__;
     }
     else
     {
-        NODE_INFO* previous_node = current_node->parent;
-
+        //NODE_INFO* previous_node = current_node->parent;
         if (remove_callback != NULL)
         {
-            remove_callback(current_node->data);
+            remove_callback(del_node->data);
         }
 
         // Remove the node
         result = 0;
-        // Does the node have a single child
-        if ((current_node->left != NULL && current_node->right == NULL) || (current_node->right != NULL && current_node->left == NULL))
+        // 1. If node has no children delete it
+        if (del_node->left == NULL && del_node->right == NULL)
         {
-            // The right node is there
-            if (current_node->left == NULL && current_node->right != NULL)
+            if (del_node->parent->left == del_node)
             {
-                // If previous_node's left tree equals Node n
-                if (previous_node->left == current_node)
-                {
-                    // then predecessor's left tree becomes n's right tree
-                    // and delete n
-                    previous_node->left = current_node->right;
-                    current_node->right->parent = previous_node;
-                    free(current_node);
-                    current_node = NULL;
-                    previous_node->balance_factor--;
-                }
-                // If predecessor's right tree equals Node n
-                else
-                {
-                    // then predecessor's right tree becomes n's right tree
-                    // and delete n
-                    previous_node->right = current_node->right;
-                    current_node->right->parent = previous_node;
-                    free(current_node);
-                    current_node = NULL;
-                    previous_node->balance_factor++;
-                }
-            }
-            else // Left node Present, No Right node Present
-            {
-                if (previous_node->left == current_node)
-                {
-                    previous_node->left = current_node->left;
-                    free(current_node);
-                    current_node = NULL;
-                    previous_node->balance_factor--;
-                }
-                else
-                {
-                    previous_node->right = current_node->left;
-                    current_node->left->parent = previous_node;
-                    free(current_node);
-                    current_node = NULL;
-                    previous_node->balance_factor++;
-                }
-            }
-        }
-        else if (current_node->left == NULL && current_node->right == NULL)
-        {
-            if (previous_node->left == current_node)
-            {
-                previous_node->left = NULL;
-                previous_node->balance_factor--;
+                del_node->parent->left = NULL;
             }
             else
             {
-                previous_node->right = NULL;
-                previous_node->balance_factor++;
+                del_node->parent->right = NULL;
             }
-            free(current_node);
         }
-        // CASE 3: Node has two children
-        // Replace Node with smallest value in right subtree
-        else if (current_node->left != NULL && current_node->right != NULL)
+        // 2. Node has one child - delete it and replace it with that child
+        else if ((del_node->left == NULL && del_node->right != NULL) || (del_node->right == NULL && del_node->left != NULL))
         {
-            // If the node's right child has a left child
-            // Move all the way down left to locate smallest element
-            if ((current_node->right)->left != NULL)
+            if (del_node->left == NULL && del_node->right != NULL)
             {
-                NODE_INFO* left_current;
-                NODE_INFO* left_current_prev;
-                left_current_prev = current_node->right;
-                left_current = (current_node->right)->left;
-                while (left_current->left != NULL)
+                // right child
+                if (del_node->parent->left == del_node)
                 {
-                    left_current_prev = left_current;
-                    left_current = left_current->left;
-                }
-                current_node->data = left_current->data;
-                free(left_current);
-                left_current_prev->left = NULL;
-            }
-            else
-            {
-                NODE_INFO* temp = current_node;
-                if (temp->parent == NULL)
-                {
-                    // deleting the root
-                    // Find the min key in the right subtree 
-                    NODE_INFO* min_node;
-                    NODE_INFO* observe_node = min_node = temp->right->left;
-                    if (observe_node == NULL)
-                    {
-                        min_node = temp->right;
-                    }
-                    else
-                    {
-                        do
-                        {
-                            if (observe_node->key < min_node->key)
-                            {
-                                min_node = observe_node;
-                            }
-                            observe_node = observe_node->left;
-                        } while (observe_node != NULL);
-                    }
-                    if (min_node->right != NULL)
-                    {
-                        // Exchange the min_node->right with min_node
-                        if (min_node->parent != current_node)
-                        {
-                            min_node->parent->left = min_node->right;
-                        }
-                        min_node->right->parent = min_node->parent;
-                        min_node->right->height = min_node->height;
-                    }
-                    else if (min_node->parent != current_node && min_node->parent->left != NULL)
-                    {
-                        min_node->parent->left = NULL;
-                    }
-                    min_node->parent = NULL;
-                    min_node->height = current_node->height;
-                    if (current_node->right != NULL && min_node != current_node->right)
-                    {
-                        min_node->right = current_node->right;
-                        current_node->right->parent = min_node;
-                    }
-                    if (current_node->left != NULL && min_node != current_node->left)
-                    {
-                        min_node->left = current_node->left;
-                        current_node->left->parent = min_node;
-                    }
-                    *root_node = min_node;
-                    free(current_node);
+                    del_node->parent->left = del_node->right;
                 }
                 else
                 {
-                    // Find the parent node that points to this
-                    // and change it
-                    if (temp->parent->right == temp)
-                    {
-                        temp->parent->right = temp->right;
-                        temp->parent->balance_factor--;
-                    }
-                    else
-                    {
-                        temp->parent->left = temp->right;
-                        temp->parent->balance_factor++;
-                    }
-                    current_node->right->parent = temp->parent;
-                    current_node->right->left = temp->left;
-                    current_node = temp->right;
-                    current_node->balance_factor--;
-                    //current_node->parent = current_node->parent;
-                    free(temp);
+                    del_node->parent->right = del_node->right;
                 }
+                del_node->right->parent = del_node->parent;
+            }
+            else
+            {
+                // right child
+                if (del_node->parent->left == del_node)
+                {
+                    del_node->parent->left = del_node->left;
+                }
+                else
+                {
+                    del_node->parent->right = del_node->left;
+                }
+                del_node->left->parent = del_node->parent;
             }
         }
-    }
+        // 3. If Node has two children, replace the node with the min value on right side
+        else
+        {
+            bool delete_parent_left = true;
+            NODE_INFO* large_node = del_node->left;
+            // Find the largest node in the left subtree
+            while (large_node->right == NULL)
+            {
+                delete_parent_left = false;
+                large_node = large_node->right;
+            }
+            
+            if (del_node == *root_node)
+            {
+                *root_node = large_node;
+            }
+
+            if (delete_parent_left)
+            {
+                large_node->parent->left = large_node->left;
+            }
+            else
+            {
+                large_node->parent->right = large_node->left;
+            }
+            large_node->parent = del_node->parent;
+            large_node->right = del_node->right;
+            if (large_node != del_node->left)
+            {
+                large_node->left = del_node->left;
+            }
+            else
+            {
+                large_node->left = NULL;
+            }
+        }
+        free(del_node);
+     }
     return result;
 }
 
 static void clear_tree(NODE_INFO* node_info)
 {
-#ifdef USE_RECURSION
-    // Clear right
-    if (node_info->right != NULL)
-    {
-        clear_tree(node_info->right);
-        free(node_info->right);
-    }
-    // Clear left
-    if (node_info->left != NULL)
-    {
-        clear_tree(node_info->left);
-        free(node_info->left);
-    }
-#else
     NODE_INFO* target_node = node_info;
     NODE_INFO* previous_node = NULL;
 
@@ -611,7 +597,6 @@ static void clear_tree(NODE_INFO* node_info)
             }
         }
     }
-#endif
 }
 
 BINARY_TREE_HANDLE binary_tree_create()
@@ -652,14 +637,14 @@ int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_KEY value, void* data)
     }
     else
     {
-        size_t current_height = 0;
+        size_t current_height = handle->height;
         NODE_INFO* new_node = create_new_node(value, data);
         if (new_node == NULL)
         {
             LogError("FAILURE: Creating new node on insert");
             result = __LINE__;
         }
-        else if (insert_into_tree(&handle->root_node, new_node) == INSERT_NODE_FAILURE)
+        else if (insert_into_tree(&handle->root_node, new_node, &current_height) != 0)
         {
             LogError("FAILURE: Inserting new node");
             free(new_node);
@@ -744,7 +729,7 @@ size_t binary_tree_height(BINARY_TREE_HANDLE handle)
     }
     else
     {
-        result = handle->root_node->height;
+        result = handle->height;
     }
     return result;
 }
