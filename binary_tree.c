@@ -15,13 +15,16 @@
 #define BLACK_COLOR     0
 #define RED_COLOR       1
 #define NUM_OF_CHARS    8
+static const char* KEY_VALUE_FMT = "%s%u";
 static const char LEFT_PARENTHESIS = '(';
 static const char RIGHT_PARENTHESIS = ')';
+static const char* RED_NODE_FLAG = "*";
+static const char* BLACK_NODE_FLAG = "";
 
 typedef struct NODE_INFO_TAG
 {
-    TREE_COLOR node_color;
     NODE_KEY key;
+    TREE_COLOR node_color;
     struct NODE_INFO_TAG* parent;
     struct NODE_INFO_TAG* right;
     struct NODE_INFO_TAG* left;
@@ -96,33 +99,59 @@ static int construct_visual_representation(const NODE_INFO* node_info, char* vis
           5    15
          / \   / \
         3   7 11  18
-
+        .
         10(5(3)(7))(15(11)(18)))
     */
     // [1, 2, 3, 4]
     // 1(2(4))(3)
-
     if (node_info != NULL)
     {
+        const NODE_INFO* prev = NULL;
+        const NODE_INFO* current = node_info;
         char temp[8];
-        int len = sprintf(temp, "%x", node_info->key);
-        memcpy(visualization+pos, temp, len);
-        pos += len;
-        if (node_info->left != NULL)
+        bool upward_movement = false;
+
+        while (current != NULL)
         {
-            memcpy(visualization + pos, &LEFT_PARENTHESIS, 1);
-            pos += 1;
-            pos = construct_visual_representation(node_info->left, visualization, pos);
-            memcpy(visualization + pos, &RIGHT_PARENTHESIS, 1);
-            pos += 1;
-        }
-        if (node_info->right != NULL)
-        {
-            memcpy(visualization + pos, &LEFT_PARENTHESIS, 1);
-            pos += 1;
-            pos = construct_visual_representation(node_info->right, visualization, pos);
-            memcpy(visualization + pos, &RIGHT_PARENTHESIS, 1);
-            pos += 1;
+            if (!upward_movement)
+            {
+                int len = sprintf(temp, KEY_VALUE_FMT, (current->node_color == RED_COLOR) ? RED_NODE_FLAG : BLACK_NODE_FLAG, current->key);
+                memcpy(visualization + pos, temp, len);
+                pos += len;
+            }
+
+            upward_movement = false;
+            if (current->left != NULL && prev != current->left && prev != current->right)
+            {
+                memcpy(visualization + pos, &LEFT_PARENTHESIS, 1);
+                pos += 1;
+                prev = current;
+                current = current->left;
+            }
+            else if (current->right != NULL && prev != current->right)
+            {
+                memcpy(visualization + pos, &LEFT_PARENTHESIS, 1);
+                pos += 1;
+                prev = current;
+                current = current->right;
+            }
+            else
+            {
+                upward_movement = true;
+                if (current->parent == NULL)
+                {
+                    // we're at the root and we came from the right node
+                    current = NULL;
+                }
+                else
+                {
+                    memcpy(visualization + pos, &RIGHT_PARENTHESIS, 1);
+                    pos += 1;
+
+                    prev = current;
+                    current = current->parent;
+                }
+            }
         }
     }
     return pos;
@@ -143,18 +172,6 @@ static NODE_INFO* create_new_node(NODE_KEY key_value, void* data)
         result->data = data;
     }
     return result;
-}
-
-static void print_tree(const NODE_INFO* node_info, size_t indent_level)
-{
-    if (node_info != NULL)
-    {
-        for (size_t index = 0; index < indent_level; index++)
-            printf("\t");
-        printf("%d\n", node_info->key);
-        print_tree(node_info->left, indent_level + 1);
-        print_tree(node_info->right, indent_level + 1);
-    }
 }
 
 static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node)
@@ -192,6 +209,10 @@ static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node)
         pivot_node->node_color = BLACK_COLOR;
         pivot_node->right->node_color = RED_COLOR;
         pivot_node->right->left = temp;
+        if (pivot_node->right->left != NULL)
+        {
+            pivot_node->right->left->parent = pivot_node->right;
+        }
     }
 }
 
@@ -230,6 +251,10 @@ static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node)
         pivot_node->node_color = BLACK_COLOR;
         pivot_node->left->node_color = RED_COLOR;
         pivot_node->left->right = temp;
+        if (pivot_node->left->right != NULL)
+        {
+            pivot_node->left->right->parent = pivot_node->left;
+        }
     }
 }
 
@@ -251,10 +276,10 @@ static NODE_INFO* rebalance_if_neccessary(NODE_INFO** root_node, NODE_INFO* node
     {
         result = NULL;
         NODE_INFO* uncle = get_uncle(node_info);
+        NODE_INFO* grandparent = get_grandparent(node_info);
         if (uncle == NULL)
         {
             // Need to do a rotation
-            NODE_INFO* grandparent = get_grandparent(node_info);
             if (node_info->parent->right == node_info && grandparent->left == node_info->parent)
             {
                 // If the Node is a right child and the parent is a left child
@@ -297,24 +322,24 @@ static NODE_INFO* rebalance_if_neccessary(NODE_INFO** root_node, NODE_INFO* node
         else if (is_red(uncle) )
         {
             // Check to make sure that the grandparent isn't the root
-            if (node_info->parent->parent->parent != NULL)
+            if (grandparent->parent != NULL)
             {
                 // The grandparent is not the root node
-                // so recolor the nodes ...
+                // push down blackness from grandparent ...
                 node_info->parent->node_color = BLACK_COLOR;
-                get_uncle(node_info)->node_color = BLACK_COLOR;
-                NODE_INFO* grandparent = get_grandparent(node_info);
+                uncle->node_color = BLACK_COLOR;
                 grandparent->node_color = RED_COLOR;
 
                 // ... so recheck the node with the grandparent
                 result = grandparent;
+                //result = node_info->parent;
             }
             else
             {
                 // Since the parent's parent is the root then 
                 // we just need to recolor
                 node_info->parent->node_color = BLACK_COLOR;
-                get_uncle(node_info)->node_color = BLACK_COLOR;
+                uncle->node_color = BLACK_COLOR;
             }
         }
         else
@@ -377,6 +402,7 @@ static NODE_INFO* find_node(NODE_INFO* node_info, const NODE_KEY* value)
     return result;
 }
 
+#include <Windows.h>
 static int insert_into_tree(NODE_INFO** root_node, NODE_INFO* new_node, size_t* height)
 {
     int result;
@@ -446,6 +472,13 @@ static int insert_into_tree(NODE_INFO** root_node, NODE_INFO* new_node, size_t* 
     }
     if (result == 0)
     {
+        char test[4096];
+        size_t pos = 0;
+        (void)construct_visual_representation(*root_node, test, pos);
+        OutputDebugStringA(test);
+        OutputDebugStringA("\r\n");
+
+
         NODE_INFO* rebalance_node = new_node;
         do
         {
@@ -734,18 +767,6 @@ size_t binary_tree_height(BINARY_TREE_HANDLE handle)
     return result;
 }
 
-void binary_tree_print(BINARY_TREE_HANDLE handle)
-{
-    if (handle == NULL)
-    {
-        LogError("FAILURE: Invalid handle specified on print");
-    }
-    else
-    {
-        print_tree(handle->root_node, 0);
-    }
-}
-
 char* binary_tree_construct_visual(BINARY_TREE_HANDLE handle)
 {
     char* result;
@@ -759,7 +780,7 @@ char* binary_tree_construct_visual(BINARY_TREE_HANDLE handle)
         // Allocate the result
         if (handle->items > 0)
         {
-            size_t len = (handle->items*NUM_OF_CHARS) + (handle->items * 2);
+            size_t len = (handle->items*NUM_OF_CHARS+1) + (handle->items * 2);
             result = (char*)malloc(len + 1);
             memset(result, 0, len + 1);
             construct_visual_representation(handle->root_node, result, 0);

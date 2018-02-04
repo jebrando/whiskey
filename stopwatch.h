@@ -22,7 +22,9 @@ extern void stopwatch_destroy(STOPWATCH_HANDLE handle);
 extern int stopwatch_start(STOPWATCH_HANDLE handle);
 extern void stopwatch_stop(STOPWATCH_HANDLE handle);
 extern void stopwatch_reset(STOPWATCH_HANDLE handle);
-extern clock_t stopwatch_get_elapsed(STOPWATCH_HANDLE handle);
+
+// Amount of time elasped in seconds
+extern double stopwatch_get_elapsed(STOPWATCH_HANDLE handle);
 
 #ifdef __cplusplus
 }

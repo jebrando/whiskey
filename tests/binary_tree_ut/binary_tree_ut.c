@@ -203,7 +203,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(BASIC_INSERT_FOR_NODES);
+        size_t count = sizeof(BASIC_INSERT_FOR_NODES)/sizeof(BASIC_INSERT_FOR_NODES[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, BASIC_INSERT_FOR_NODES[index], DATA_VALUE);
@@ -226,7 +226,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(BASIC_INSERT_2_FOR_NODES);
+        size_t count = sizeof(BASIC_INSERT_2_FOR_NODES)/ sizeof(BASIC_INSERT_2_FOR_NODES[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, BASIC_INSERT_2_FOR_NODES[index], DATA_VALUE);
@@ -249,7 +249,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION)/sizeof(INSERT_FOR_NO_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
@@ -272,24 +272,50 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(COMPLEX_INSERT_FOR_NODES);
+        size_t count = sizeof(COMPLEX_INSERT_FOR_NODES)/sizeof(COMPLEX_INSERT_FOR_NODES[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, COMPLEX_INSERT_FOR_NODES[index], DATA_VALUE);
 
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
-
-            char* visual_check = binary_tree_construct_visual(handle);
-
-            OutputDebugStringA(visual_check);
-            OutputDebugStringA("\r\n");
-            free(visual_check);
-
         }
 
         //assert
         assert_visual_check(handle, VISUAL_COMPLEX_INSERT);
+
+
+        //cleanup
+        binary_tree_destroy(handle);
+    }
+
+    TEST_FUNCTION(binary_tree_insert_random_failure_succeed)
+    {
+        //arrange
+        BINARY_TREE_HANDLE handle = binary_tree_create();
+
+        // Fails on 30
+        //static const NODE_KEY INSERT_RANDOM_FAILURE[] = { 5, 44, 83, 30, 63, 23, 67, 100, 37, 98, 75, 66, 49, 61, 82, 47, 69, 19, 31, 76, 87, 86, 21, 16, 89 };//, 45, 97, 62, 7, 27, 79 };//, 60, 14 };
+        static const NODE_KEY INSERT_RANDOM_FAILURE[] = { 50, 25, 75, 15, 40, 60, 85, 5, 18, 35, 45, 55, 65, 70, 95, 48 };
+        static const char* VISUAL_RANDOM_FAILURE = "a(6)(e(d)(12))";
+
+        //act
+        size_t count = sizeof(INSERT_RANDOM_FAILURE) / sizeof(INSERT_RANDOM_FAILURE[0]);
+        for (size_t index = 0; index < count; index++)
+        {
+            int result = binary_tree_insert(handle, INSERT_RANDOM_FAILURE[index], DATA_VALUE);
+
+            //assert
+            ASSERT_ARE_EQUAL(int, 0, result);
+
+        } 
+        char* visual_check = binary_tree_construct_visual(handle);
+        OutputDebugStringA(visual_check);
+        OutputDebugStringA("\r\n");
+        free(visual_check);
+
+        //assert
+        //assert_visual_check(handle, VISUAL_COMPLEX_INSERT);
 
 
         //cleanup
@@ -302,7 +328,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(INSERT_FOR_RIGHT_ROTATION);
+        size_t count = sizeof(INSERT_FOR_RIGHT_ROTATION)/ sizeof(INSERT_FOR_RIGHT_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, INSERT_FOR_RIGHT_ROTATION[index], DATA_VALUE);
@@ -322,7 +348,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(INSERT_FOR_RIGHT_LEFT_ROTATION);
+        size_t count = sizeof(INSERT_FOR_RIGHT_LEFT_ROTATION)/sizeof(INSERT_FOR_RIGHT_LEFT_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, INSERT_FOR_RIGHT_LEFT_ROTATION[index], DATA_VALUE);
@@ -342,7 +368,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         BINARY_TREE_HANDLE handle = binary_tree_create();
 
         //act
-        size_t count = sizeof(INSERT_FOR_LEFT_RIGHT_ROTATION);
+        size_t count = sizeof(INSERT_FOR_LEFT_RIGHT_ROTATION)/sizeof(INSERT_FOR_LEFT_RIGHT_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, INSERT_FOR_LEFT_RIGHT_ROTATION[index], DATA_VALUE);
@@ -365,7 +391,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xb, 0xd };
         const char* VISUAL_LEFT_ROTATION = "7(5)(b(a)(d))";
 
-        size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
+        size_t count = sizeof(INSERT_FOR_LEFT_ROTATION)/sizeof(INSERT_FOR_LEFT_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, INSERT_FOR_LEFT_ROTATION[index], DATA_VALUE);
@@ -388,7 +414,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         static const NODE_KEY INSERT_FOR_LEFT_ROTATION[] = { 0x7, 0x5, 0xa, 0xd, 0xb };
         const char* VISUAL_LEFT_ROTATION = "7(5)(b(a)(d))";
 
-        size_t count = sizeof(INSERT_FOR_LEFT_ROTATION);
+        size_t count = sizeof(INSERT_FOR_LEFT_ROTATION)/sizeof(INSERT_FOR_LEFT_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             int result = binary_tree_insert(handle, INSERT_FOR_LEFT_ROTATION[index], DATA_VALUE);
@@ -418,7 +444,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION)/sizeof(INSERT_FOR_NO_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
@@ -453,7 +479,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION)/sizeof(INSERT_FOR_NO_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
@@ -473,7 +499,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION)/sizeof(INSERT_FOR_NO_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
@@ -506,7 +532,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION)/sizeof(INSERT_FOR_NO_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
@@ -539,7 +565,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+        size_t count = sizeof(INSERT_FOR_NO_ROTATION)/sizeof(INSERT_FOR_NO_ROTATION[0]);
         for (size_t index = 0; index < count; index++)
         {
             (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
@@ -567,7 +593,6 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //cleanup
     }
-
 #if 0
     TEST_FUNCTION(binary_tree_remove_two_children_succeed)
     {
@@ -808,15 +833,19 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         binary_tree_destroy(handle);
     }
 
-
+     
     TEST_FUNCTION(binary_tree_construct_visual_succeed)
     {
         //arrange
         BINARY_TREE_HANDLE handle = binary_tree_create();
-        size_t count = sizeof(INSERT_FOR_NO_ROTATION);
+
+        const NODE_KEY VISUAL_NODES[] = { 10, 5, 15, 12, 7, 2 };
+        const char* VISUAL_NODE_VALUE = "a(5(2)(7))(f(c))";
+
+        size_t count = sizeof(VISUAL_NODES)/sizeof(VISUAL_NODES[0]);
         for (size_t index = 0; index < count; index++)
         {
-            (void)binary_tree_insert(handle, INSERT_FOR_NO_ROTATION[index], DATA_VALUE);
+            (void)binary_tree_insert(handle, VISUAL_NODES[index], DATA_VALUE);
         }
 
         //act
@@ -824,7 +853,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         //assert
         ASSERT_IS_NOT_NULL(result);
-        ASSERT_ARE_EQUAL(char_ptr, VISUAL_NO_ROTATION, result);
+        ASSERT_ARE_EQUAL(char_ptr, VISUAL_NODE_VALUE, result);
 
         //cleanup
         free(result);

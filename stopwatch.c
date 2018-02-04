@@ -84,25 +84,27 @@ void stopwatch_reset(STOPWATCH_HANDLE handle)
     }
 }
 
-clock_t stopwatch_get_elapsed(STOPWATCH_HANDLE handle)
+double stopwatch_get_elapsed(STOPWATCH_HANDLE handle)
 {
-    clock_t result;
+    double result;
+    clock_t elapsed;
     if (handle == NULL)
     {
         LogError("FAILURE: Invalid handle specified on start");
-        result = __LINE__;
+        result = 0.0;
     }
     else
     {
         // If still in progress
         if (handle->started != 0)
         {
-            result = clock() - handle->start_time;
+            elapsed = clock() - handle->start_time;
         }
         else
         {
-            result = handle->stop_time - handle->start_time;
+            elapsed = handle->stop_time - handle->start_time;
         }
+        result = ((double)elapsed) / CLOCKS_PER_SEC;
     }
     return result;
 }
