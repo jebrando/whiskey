@@ -47,15 +47,15 @@ extern "C"
 #endif
 
 static const NODE_KEY BASIC_INSERT_FOR_NODES[] = { 0xa, 0xc, 0xe };
-static const NODE_KEY BASIC_INSERT_2_FOR_NODES[] = { 0xe, 0xc, 0xa };
-static const char* VISUAL_BASIC_INSERT = "c(a)(e)";
+static const NODE_KEY BASIC_INSERT_2_FOR_NODES[] = { 14, 12, 10 };
+static const char* VISUAL_BASIC_INSERT = "12(*10)(*17)";
 
-static const NODE_KEY COMPLEX_INSERT_FOR_NODES[] = { 0x8, 0x12, 0x5, 0xf, 0x11, 0x19, 0x28, 0x50 };
-static const char* VISUAL_COMPLEX_INSERT = "11(8(5)(f))(19(12)(28(50)))";
+static const NODE_KEY COMPLEX_INSERT_FOR_NODES[] = { 0x8, 18, 5, 0xf, 17, 25, 40, 80 };
+static const char* VISUAL_COMPLEX_INSERT = "17(*8(5)(15))(*25(18)(40(*80)))";
 
 static const size_t INSERT_NO_ROTATION_HEIGHT = 3;
 static const NODE_KEY INSERT_FOR_NO_ROTATION[] = { 0xa, 0xb, 0x5, 0x7, 0xc, 0x3 };
-static const char* VISUAL_NO_ROTATION = "a(5(3)(7))(b(c))";
+static const char* VISUAL_NO_ROTATION = "10(5(*3)(*7))(11(*12))";
 
 static const NODE_KEY INSERT_FOR_NO_ROTATION_2[] = { 0xa, 0xc, 0x5, 0x7, 0xb, 0x3 };
 static const char* VISUAL_NO_ROTATION_2 = "a(5(3)(7))(c(b))";
@@ -219,7 +219,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
-
+#if 0
     TEST_FUNCTION(binary_tree_insert_2_basic_succeed)
     {
         //arrange
@@ -296,9 +296,8 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
         // Fails on 30
         //static const NODE_KEY INSERT_RANDOM_FAILURE[] = { 5, 44, 83, 30, 63, 23, 67, 100, 37, 98, 75, 66, 49, 61, 82, 47, 69, 19, 31, 76, 87, 86, 21, 16, 89 };//, 45, 97, 62, 7, 27, 79 };//, 60, 14 };
-        static const NODE_KEY INSERT_RANDOM_FAILURE[] = { 50, 25, 75, 15, 40, 60, 85, 5, 18, 35, 45, 55, 65, 70, 95, 48 };
-        static const char* VISUAL_RANDOM_FAILURE = "a(6)(e(d)(12))";
-
+        static const NODE_KEY INSERT_RANDOM_FAILURE[] = { 11, 2, 14, 1, 7, 15, 5, 8, 4 };
+        static const char* VISUAL_RANDOM_FAILURE = "7(*2(1)(5(*4)))(*11(8)(14(*15)))";
         //act
         size_t count = sizeof(INSERT_RANDOM_FAILURE) / sizeof(INSERT_RANDOM_FAILURE[0]);
         for (size_t index = 0; index < count; index++)
@@ -307,15 +306,10 @@ BEGIN_TEST_SUITE(binary_tree_ut)
 
             //assert
             ASSERT_ARE_EQUAL(int, 0, result);
-
-        } 
-        char* visual_check = binary_tree_construct_visual(handle);
-        OutputDebugStringA(visual_check);
-        OutputDebugStringA("\r\n");
-        free(visual_check);
+        }
 
         //assert
-        //assert_visual_check(handle, VISUAL_COMPLEX_INSERT);
+        assert_visual_check(handle, VISUAL_RANDOM_FAILURE);
 
 
         //cleanup
@@ -859,5 +853,5 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         free(result);
         binary_tree_destroy(handle);
     }
-
+#endif
     END_TEST_SUITE(binary_tree_ut)
