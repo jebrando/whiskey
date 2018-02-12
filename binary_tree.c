@@ -187,12 +187,13 @@ static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doub
         {
             *root_node = pivot_node;
             pivot_node->parent->left = pivot_node->right;
-            pivot_node->right->parent = pivot_node->parent;
+            if (pivot_node->right != NULL)
+            {
+                pivot_node->right->parent = pivot_node->parent;
+            }
             pivot_node->parent->parent = pivot_node;
             pivot_node->right = pivot_node->parent;
             pivot_node->parent = NULL;
-            pivot_node->right->node_color = RED_COLOR;
-            pivot_node->node_color = BLACK_COLOR;
         }
         else
         {
@@ -202,6 +203,7 @@ static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doub
             //*root_node = pivot_node;
             //pivot_node->parent = NULL;
         
+            pivot_node->right = 
             pivot_node->left->parent = pivot_node->parent;
             pivot_node->parent = pivot_node->left;
             pivot_node->left = pivot_node->parent->right;
@@ -250,12 +252,14 @@ static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doubl
         {
             *root_node = pivot_node;
             pivot_node->parent->right = pivot_node->left;
-            pivot_node->left->parent = pivot_node->parent;
+
+            if (pivot_node->left != NULL)
+            {
+                pivot_node->left->parent = pivot_node->parent;
+            }
             pivot_node->parent->parent = pivot_node;
             pivot_node->left = pivot_node->parent;
             pivot_node->parent = NULL;
-            pivot_node->left->node_color = RED_COLOR;
-            pivot_node->node_color = BLACK_COLOR;
         }
         else
         {
@@ -271,11 +275,6 @@ static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doubl
             // Color the Nodes
             pivot_node->node_color = BLACK_COLOR;
             pivot_node->left->node_color = RED_COLOR;
-            //pivot_node->left->right = temp;
-            if (pivot_node->left->right != NULL)
-            {
-                //pivot_node->left->right->parent = pivot_node->left;
-            }
         }
 
 /*        else

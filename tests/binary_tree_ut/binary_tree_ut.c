@@ -46,9 +46,9 @@ extern "C"
 }
 #endif
 
-static const NODE_KEY BASIC_INSERT_FOR_NODES[] = { 0xa, 0xc, 0xe };
+static const NODE_KEY BASIC_INSERT_FOR_NODES[] = { 10, 12, 14 };
 static const NODE_KEY BASIC_INSERT_2_FOR_NODES[] = { 14, 12, 10 };
-static const char* VISUAL_BASIC_INSERT = "12(*10)(*17)";
+static const char* VISUAL_BASIC_INSERT = "12(*10)(*14)";
 
 static const NODE_KEY COMPLEX_INSERT_FOR_NODES[] = { 0x8, 18, 5, 0xf, 17, 25, 40, 80 };
 static const char* VISUAL_COMPLEX_INSERT = "17(*8(5)(15))(*25(18)(40(*80)))";
@@ -219,7 +219,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         //cleanup
         binary_tree_destroy(handle);
     }
-#if 0
+
     TEST_FUNCTION(binary_tree_insert_2_basic_succeed)
     {
         //arrange
@@ -289,6 +289,7 @@ BEGIN_TEST_SUITE(binary_tree_ut)
         binary_tree_destroy(handle);
     }
 
+#if 0
     TEST_FUNCTION(binary_tree_insert_random_failure_succeed)
     {
         //arrange
