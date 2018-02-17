@@ -176,8 +176,33 @@ static NODE_INFO* create_new_node(NODE_KEY key_value, void* data)
     return result;
 }
 
-static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node, bool double_rotate)
+static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node)
 {
+    NODE_INFO* orig_parent = pivot_node->parent;
+    if (*root_node == orig_parent)
+    {
+        *root_node = pivot_node;
+    }
+    else
+    {
+        orig_parent->parent->left = pivot_node;
+    }
+    pivot_node->parent = orig_parent->parent;
+    orig_parent->left = NULL; // Maybe this will need to be a different node
+
+    // Move the left node to the parent
+    if (pivot_node->right != NULL)
+    {
+        orig_parent->right = pivot_node->right;
+        pivot_node->right->parent = orig_parent;
+    }
+    pivot_node->right = orig_parent;
+    orig_parent->parent = pivot_node;
+    
+    pivot_node->node_color = BLACK_COLOR;
+    pivot_node->right->node_color = RED_COLOR;
+
+#if 0
     if (pivot_node->left != NULL)
     {
         //NODE_INFO* temp = pivot_node->right;
@@ -203,7 +228,7 @@ static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doub
             //*root_node = pivot_node;
             //pivot_node->parent = NULL;
         
-            pivot_node->right = 
+            //pivot_node->right = 
             pivot_node->left->parent = pivot_node->parent;
             pivot_node->parent = pivot_node->left;
             pivot_node->left = pivot_node->parent->right;
@@ -212,7 +237,10 @@ static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doub
         if (!double_rotate)
         {
             pivot_node->node_color = BLACK_COLOR;
-            pivot_node->right->node_color = RED_COLOR;
+            if (pivot_node->right)
+            {
+                pivot_node->right->node_color = RED_COLOR;
+            }
         }
         /*else
         {
@@ -239,14 +267,37 @@ static void rotate_right(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doub
             pivot_node->right->left->parent = pivot_node->right;
         }*/
     }
+#endif
 }
 
-static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node, bool double_rotate)
+static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node)
 {
+    NODE_INFO* orig_parent = pivot_node->parent;
+    if (*root_node == orig_parent)
+    {
+        *root_node = pivot_node;
+    }
+    else
+    {
+        orig_parent->parent->right = pivot_node;
+    }
+    pivot_node->parent = orig_parent->parent;
+    orig_parent->right = NULL;
+
+    // Move the left node to the parent
+    if (pivot_node->left != NULL)
+    {
+        orig_parent->left = pivot_node->left;
+        pivot_node->left->parent = orig_parent;
+    }
+    pivot_node->left = orig_parent;
+    orig_parent->parent = pivot_node;
+
+    pivot_node->node_color = BLACK_COLOR;
+    pivot_node->left->node_color = RED_COLOR;
+#if 0
     if (pivot_node->right != NULL)
     {
-        //NODE_INFO* temp = pivot_node->left;
-
         // Is the parent the root
         if ((*root_node)->right == pivot_node)
         {
@@ -267,14 +318,20 @@ static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doubl
             pivot_node->parent->left = pivot_node->right;
             pivot_node->parent = pivot_node->right;
             pivot_node->right = pivot_node->parent->left;
-            pivot_node->parent->left->parent = pivot_node;
+            if (pivot_node->parent->left != NULL)
+            {
+                pivot_node->parent->left->parent = pivot_node;
+            }
             pivot_node->parent->left = pivot_node;
         }
         if (!double_rotate)
         {
             // Color the Nodes
             pivot_node->node_color = BLACK_COLOR;
-            pivot_node->left->node_color = RED_COLOR;
+            if (pivot_node->left)
+            {
+                pivot_node->left->node_color = RED_COLOR;
+            }
         }
 
 /*        else
@@ -295,6 +352,29 @@ static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node, bool doubl
             }
         }*/
     }
+#endif
+}
+
+static void double_rotate_left_right(NODE_INFO** root_node, NODE_INFO* pivot_node)
+{
+    pivot_node->right->parent = pivot_node->parent;
+    pivot_node->parent->left = pivot_node->right;
+    pivot_node->parent = pivot_node->right;
+    pivot_node->parent->left = pivot_node;
+    pivot_node->right = NULL; // For now, not sure if this will change
+
+    rotate_right(root_node, pivot_node->parent);
+}
+
+static void double_rotate_right_left(NODE_INFO** root_node, NODE_INFO* pivot_node)
+{
+    pivot_node->left->parent = pivot_node->parent;
+    pivot_node->parent->right = pivot_node->left;
+    pivot_node->parent = pivot_node->left;
+    pivot_node->parent->right = pivot_node;
+    pivot_node->left = NULL; // For now, not sure if this will change
+
+    rotate_left(root_node, pivot_node->parent);
 }
 
 static NODE_INFO* rebalance_if_neccessary(NODE_INFO** root_node, NODE_INFO* node_info, size_t* height)
@@ -323,38 +403,36 @@ static NODE_INFO* rebalance_if_neccessary(NODE_INFO** root_node, NODE_INFO* node
             {
                 // If the Node is a right child and the parent is a left child
                 // swap and rotate
-                grandparent->left = node_info;
+                /*grandparent->left = node_info;
                 node_info->left = node_info->parent;
                 node_info->parent->right = NULL;
                 node_info->parent->parent = node_info;
-                node_info->parent = grandparent;
+                node_info->parent = grandparent;*/
 
-                //rotate_left(root_node, node_info->parent);
-                rotate_right(root_node, node_info, false);
+                double_rotate_left_right(root_node, node_info->parent);
                 (*height)--;
             }
             else if (node_info->parent->left == node_info && grandparent->right == node_info->parent)
             {
                 // If the Node is a left child and the parent is a right child
                 // swap and rotate
-                grandparent->right = node_info;
+                /*grandparent->right = node_info;
                 node_info->right = node_info->parent;
                 node_info->parent->left = NULL;
                 node_info->parent->parent = node_info;
-                node_info->parent = grandparent;
+                node_info->parent = grandparent;*/
 
-                //rotate_right(root_node, node_info->parent);
-                rotate_left(root_node, node_info, false);
+                double_rotate_right_left(root_node, node_info->parent);
                 (*height)--;
             }
             else if (node_info->parent->right == node_info && grandparent->right == node_info->parent)
             {
-                rotate_left(root_node, node_info->parent, false);
+                rotate_left(root_node, node_info->parent);
                 (*height)--;
             }
             else if (node_info->parent->left == node_info && grandparent->left == node_info->parent)
             {
-                rotate_right(root_node, node_info->parent, false);
+                rotate_right(root_node, node_info->parent);
                 (*height)--;
             }
         }
@@ -386,43 +464,23 @@ static NODE_INFO* rebalance_if_neccessary(NODE_INFO** root_node, NODE_INFO* node
             // The uncle is black so we do the rotation
             if (node_info->parent->right == node_info && grandparent->left == node_info->parent)
             {
-                char test[4096];
-                memset(test, 0, 4096);
-                (void)construct_visual_representation(*root_node, test);
-                OutputDebugStringA(test);
-                OutputDebugStringA("\r\n");
-
                 // Double swap
-                rotate_left(root_node, node_info->parent, true);
-
-                memset(test, 0, 4096);
-                (void)construct_visual_representation(*root_node, test);
-                OutputDebugStringA(test);
-                OutputDebugStringA("\r\n");
-
-                rotate_right(root_node, node_info, true);
+                double_rotate_left_right(root_node, node_info->parent);
                 (*height)--;
             }
             else if (node_info->parent->right == node_info)
             {
-
-                char test[4096];
-                memset(test, 0, 4096);
-                (void)construct_visual_representation(*root_node, test);
-                OutputDebugStringA(test);
-                OutputDebugStringA("\r\n");
-                rotate_left(root_node, node_info->parent, false);
+                rotate_left(root_node, node_info->parent);
             }
             else if (node_info->parent->left == node_info && grandparent->right == node_info->parent)
             {
                 // Double swap
-                rotate_right(root_node, node_info->parent, true);
-                rotate_left(root_node, node_info, true);
+                double_rotate_right_left(root_node, node_info->parent);
                 (*height)--;
             }
             else
             {
-                rotate_right(root_node, node_info->parent, false);
+                rotate_right(root_node, node_info->parent);
                 (*height)--;
             }
         }
@@ -543,11 +601,11 @@ static int insert_into_tree(NODE_INFO** root_node, NODE_INFO* new_node, size_t* 
         NODE_INFO* rebalance_node = new_node;
         do
         {
-            char test[4096];
-            memset(test, 0, 4096);
-            (void)construct_visual_representation(*root_node, test);
-            OutputDebugStringA(test);
-            OutputDebugStringA("\r\n");
+            //char test[4096];
+            //memset(test, 0, 4096);
+            //(void)construct_visual_representation(*root_node, test);
+            //OutputDebugStringA(test);
+            //OutputDebugStringA("\r\n");
 
             rebalance_node = rebalance_if_neccessary(root_node, rebalance_node, &incremental_height);
         } while (rebalance_node != NULL);
