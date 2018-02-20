@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-#include <vld.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +8,7 @@
 #include "binary_tree.h"
 #include "stopwatch.h"
 
-#define ITEMS_COUNT    100
+#define ITEMS_COUNT    1000000
 
 // Right Rotation
 static const NODE_KEY KEY_VALUES[] = { 0xa, 0xf, 0x5, 0xb, 0x7, 0x3, 0x12 };
@@ -25,7 +23,7 @@ static int large_insert(BINARY_TREE_HANDLE handle)
 {
     int result = 0;
 
-    NODE_KEY insert_list[ITEMS_COUNT];
+    NODE_KEY* insert_list = malloc(sizeof(NODE_KEY)*ITEMS_COUNT);
     printf("Loading Array with %d items ...\r\n", ITEMS_COUNT);
     stopwatch_start(g_timer_handle);
     for (NODE_KEY index = 0; index < ITEMS_COUNT; index++)
@@ -53,7 +51,6 @@ static int large_insert(BINARY_TREE_HANDLE handle)
     (void)printf("Shuffling the array took %f seconds\r\n", time_elapsed);
     stopwatch_reset(g_timer_handle);
 
-
     printf("Inserting the Array ...\r\n");
     stopwatch_reset(g_timer_handle);
     for (NODE_KEY index = 0; index < ITEMS_COUNT; index++)
@@ -68,6 +65,19 @@ static int large_insert(BINARY_TREE_HANDLE handle)
     time_elapsed = stopwatch_get_elapsed(g_timer_handle);
     (void)printf("Inserting the array took %f seconds\r\n", time_elapsed);
     stopwatch_reset(g_timer_handle);
+
+    (void)printf("Find an item ...\r\n");
+    size_t find_item_index = 250090;
+    stopwatch_reset(g_timer_handle);
+    void* found_item = binary_tree_find(handle, insert_list[find_item_index]);
+    time_elapsed = stopwatch_get_elapsed(g_timer_handle);
+    if (found_item == NULL)
+    {
+        (void)printf("Could not find the item\r\n");
+    }
+    (void)printf("Finding an item took %f seconds\r\n", time_elapsed);
+
+    free(insert_list);
     return result;
 }
 
@@ -120,14 +130,14 @@ int main(void)
     }
     else if ((g_timer_handle = stopwatch_create()) == NULL)
     {
-        binary_tree_destroy(handle);
+        binary_tree_destroy(handle, NULL);
         (void)printf("FAILURE: creating stopwatch\r\n");
     }
     else
     {
         //size_t count = sizeof(KEY_VALUES);
         //if (insert_items(handle, KEY_VALUES, count) == 0)
-         if (large_insert(handle))
+        if (large_insert(handle))
         {
 
             // Find a valid item
@@ -143,7 +153,7 @@ int main(void)
             }*/
 
         }
-        binary_tree_destroy(handle);
+        binary_tree_destroy(handle, NULL);
         stopwatch_destroy(g_timer_handle);
     }
     (void)printf("Press any key to exit:");

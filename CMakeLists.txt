@@ -32,6 +32,7 @@ set(whiskey_c_files
 set(whiskey_h_files
     binary_tree.h
     stopwatch.h
+    logging.h
 )
 
 #Conditionally use the SDK trusted certs in the samples

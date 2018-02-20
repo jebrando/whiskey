@@ -27,14 +27,23 @@ typedef enum LOG_CATEGORY_TAG
 #define LOG_NONE 0x00
 #define LOG_LINE 0x01
 
-#define LOG(log_category, log_options, format, ...) {(void)log_category;(void)log_options; (void)printf(format, __VA_ARGS__);(void)printf("\r\n"); }
+#if defined _MSC_VER
+    #define LOG(log_category, log_options, format, ...) { (void)log_category; (void)log_options; (void)printf(format, __VA_ARGS__); (void)printf("\r\n"); }
+#else
+    #define LOG(log_category, log_options, format, ...) { (void)log_category; (void)log_options; (void)printf(#format "\r\n", ##__VA_ARGS__ ); } 
+#endif
 
 #ifdef DEBUG_LOG
 #define LogDebug(FORMAT, ...) do { LOG(AZ_LOG_TRACE, LOG_LINE, FORMAT, __VA_ARGS__); } while((void)0,0)
 #else
 #define LogDebug(FORMAT, ...) do {} while((void)0,0)
 #endif // DEBUG_LOG
-#define LogError(FORMAT, ...) do { LOG(AZ_LOG_ERROR, LOG_LINE, FORMAT, __VA_ARGS__); } while((void)0,0)
+
+#if defined _MSC_VER
+    #define LogError(FORMAT, ...) do { LOG(AZ_LOG_ERROR, LOG_LINE, FORMAT, __VA_ARGS__); } while((void)0,0)
+#else
+    #define LogError(FORMAT, ...) do { LOG(AZ_LOG_ERROR, LOG_LINE, FORMAT, ##__VA_ARGS__); } while((void)0,0)
+#endif
 
 #define INSERT_NODE_FAILURE     11
 

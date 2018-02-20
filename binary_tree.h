@@ -20,7 +20,7 @@ typedef void (*tree_remove_callback)(void* data);
 typedef unsigned long NODE_KEY;
 
 extern BINARY_TREE_HANDLE binary_tree_create();
-extern void binary_tree_destroy(BINARY_TREE_HANDLE handle);
+extern void binary_tree_destroy(BINARY_TREE_HANDLE handle, tree_remove_callback delete_callback);
 
 extern int binary_tree_insert(BINARY_TREE_HANDLE handle, NODE_KEY value, void* data);
 extern int binary_tree_remove(BINARY_TREE_HANDLE handle, NODE_KEY value, tree_remove_callback remove_callback);
