@@ -281,7 +281,10 @@ static void rotate_left(NODE_INFO** root_node, NODE_INFO* pivot_node)
     orig_parent->parent = pivot_node;
 
     pivot_node->node_color = BLACK_COLOR;
-    pivot_node->left->node_color = RED_COLOR;
+    if (!is_red(pivot_node->left->left) && !is_red(pivot_node->left->right) )
+    {
+        pivot_node->left->node_color = RED_COLOR;
+    }
 }
 
 static void double_rotate_left_right(NODE_INFO** root_node, NODE_INFO* pivot_node)
@@ -567,15 +570,6 @@ static int remove_node(NODE_INFO** root_node, const NODE_KEY* node_key, tree_rem
             bool left_node = is_left_node(del_node);
 
             // Remove the node
-            if (left_node)
-            {
-                del_node->parent->left = NULL;
-            }
-            else
-            {
-                del_node->parent->right = NULL;
-            }
-
             if (del_node->parent == *root_node)
             {
                 NODE_INFO* sibling_node = get_sibling(del_node);
@@ -605,7 +599,24 @@ static int remove_node(NODE_INFO** root_node, const NODE_KEY* node_key, tree_rem
                             double_rotate_left_right(root_node, sibling_node);
                         }
                     }
+                    // Push down blackness
+                    if (sibling_node->left != NULL)
+                    {
+                        sibling_node->left->node_color = BLACK_COLOR;
+                    }
+                    if (sibling_node->right != NULL)
+                    {
+                        sibling_node->right->node_color = BLACK_COLOR;
+                    }
                 }
+            }
+            if (left_node)
+            {
+                del_node->parent->left = NULL;
+            }
+            else
+            {
+                del_node->parent->right = NULL;
             }
         }
         // 2. Node has one child - delete it and replace it with that child
